@@ -3,13 +3,14 @@ import numpy as np
 from utils import getFacesIdsNames
 
 face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
+dataset_path = "dataset"
 
 def train():
     recognizer = cv.face.LBPHFaceRecognizer.create()
     print ("\n [INFO] Training faces. It will take a few seconds. Please wait...")
-    faces,ids,_ = getFacesIdsNames("datasets")
-    recognizer.train(faces, np.array(ids))# Save the model into trainer/trainer.yml
-    recognizer.write('trainer.yml') # Print the numer of faces trained and end program
+    faces,ids,_ = getFacesIdsNames(dataset_path)
+    recognizer.train(faces, np.array(ids))
+    recognizer.write('trainer.yml')
     print(f"\n [INFO] {len(np.unique(ids))} faces trained.")
 
 def recognize():
@@ -18,10 +19,9 @@ def recognize():
     recognizer = cv.face.LBPHFaceRecognizer.create()
     recognizer.read('trainer.yml')
     font = cv.FONT_HERSHEY_SIMPLEX
-    id = 0
-    _, _, names = getFacesIdsNames("datasets")
+    _, _, names = getFacesIdsNames(dataset_path)
     video_capture = cv.VideoCapture(0)
-    while True:
+    while video_capture.isOpened():
         ret, frame = video_capture.read()
         frame_gray = cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
         frame_gray = cv.equalizeHist(frame_gray)
@@ -37,24 +37,8 @@ def recognize():
             else:
                 name = "Unknown"
             
-            cv.putText(
-                        frame, 
-                        name, 
-                        (x+5,y-5), 
-                        font, 
-                        1, 
-                        (255,255,255), 
-                        2
-                    )
-            cv.putText(
-                        frame, 
-                        str(confidence), 
-                        (x+5,y+h-5), 
-                        font, 
-                        1, 
-                        (255,255,0), 
-                        1
-                    )  
+            cv.putText(frame, name, (x+5,y-5), font, 1, (255,255,255), 2)
+            cv.putText(frame, str(confidence), (x+5,y+h-5), font, 1, (255,255,0), 1)
         
         cv.imshow('Recognizer', frame)
         cv.setWindowProperty('Recognizer', cv.WND_PROP_TOPMOST, 1)

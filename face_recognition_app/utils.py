@@ -5,20 +5,22 @@ import numpy as np
 from time import time
 
 face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
+dataset_path = "dataset"
 
+# Just a demo for face detection
 def detectFace():
     print(" [INFO] Detecting faces...")
     video_capture = cv.VideoCapture(0)
-    while True:
+    while video_capture.isOpened():
         ret, frame = video_capture.read()
         frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         frame_gray = cv.equalizeHist(frame_gray)
         # Detect faces
-        faces = face_cascade.detectMultiScale(frame_gray, minSize=(100,100))
+        faces = face_cascade.detectMultiScale(frame_gray, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
         for (x,y,w,h) in faces:
             frame = cv.rectangle(frame, (x, y), (x+w, y+h), (50,50,255), 1)
         cv.imshow("Detector", frame)
-        cv.setWindowProperty('Detector', cv.WND_PROP_TOPMOST, 1)
+        cv.setWindowProperty("Detector", cv.WND_PROP_TOPMOST, 1)
         # ESC to exit
         if cv.waitKey(1) & 0xff == 27:
          break
@@ -66,21 +68,19 @@ def createDir(dir_name):
 def collectFaceSamples():
     print(" [INFO] Collecting face samples...")
 
-    dir_name = "dataset"
-    createDir(dir_name)
+    createDir(dataset_path)
 
     id = readIdFromFile()
 
     name = str(input("\n [INPUT] Enter your name: "))
 
-    # Flip video image vertically
-    # frame = cv.flip(frame, 0)
-    
+    createDir(f"{dataset_path}/{name}")
+
     time_limit = 10
 
     t0 = time()
     video_capture = cv.VideoCapture(0)
-    while True:
+    while video_capture.isOpened():
         ret, frame = video_capture.read()
         frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
         frame_gray = cv.equalizeHist(frame_gray)
@@ -92,7 +92,7 @@ def collectFaceSamples():
             cv.putText(frame, f"{str(int(seconds))}/{time_limit}", (30, 40), cv.FONT_HERSHEY_PLAIN, 2, (50,50,255), 2)
             cv.rectangle(frame, (x,y), (x+w,y+h), (50,50,255), 1)
             # Save the captured image into the data folder
-            cv.imwrite(f"{dir_name}/{name}.{id}.{seconds}.jpg", frame_gray[y:y+h,x:x+w])
+            cv.imwrite(f"{dataset_path}/{name}/{name}.{id}.{seconds}.jpg", frame_gray[y:y+h, x:x+w])
         cv.imshow("Collector", frame)
         cv.setWindowProperty('Collector', cv.WND_PROP_TOPMOST, 1)
         # Take 4 face sample and stop video
