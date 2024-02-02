@@ -1,0 +1,85 @@
+import cv2 as cv
+import os
+import numpy as np
+import tensorflow as tf
+from keras_facenet import FaceNet
+from uuid import uuid1
+from utils import createDir
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+
+def extractFace(frame, name, counter):
+    face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
+    faces = face_cascade.detectMultiScale(frame, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
+    for (x,y,w,h) in faces:
+        counter += 1
+        face = frame[y:y+h, x:x+w]
+        # face = processFace(face)
+        saveFace(face, name)
+        frame = cv.rectangle(frame, (x, y), (x+w, y+h), (50,50,255), 3)
+    cv.imshow("Webcam Capture", frame)
+    cv.setWindowProperty("Webcam Capture", cv.WND_PROP_TOPMOST, 1)
+    return counter
+
+# def processFace(face, target_size=(160, 160)):
+#     face = cv.resize(face, target_size)
+#     return face
+
+def saveFace(face, name):
+    path = f"dataset/{name}"
+    # uuid is 128 bits, shift right by 102 bits to shorten
+    random_id = uuid1().int >> 102
+    createDir(path)
+    cv.imwrite(f"{path}/{random_id}.jpg", face)
+
+def loadFaces(dir):
+    faces = []
+    for img in os.listdir(dir):
+        path = dir + "/" + img
+        face = cv.imread(path)
+        face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
+        face = cv.resize(face, (160, 160))
+        print(img, face.shape)
+        faces.append(face)
+    return faces
+
+def loadClasses(dir):
+    x, y = [], []
+    for sub_dir in os.listdir(dir):
+        path = dir + "/" + sub_dir
+        faces = loadFaces(path)
+        names = [sub_dir for _ in range(len(faces))]
+        x.extend(faces)
+        y.extend(names)
+    return np.asarray(x), np.asarray(y)
+
+# Open webcam and do real-time face detection
+def webCamCapture():
+    name = input("Enter your name: ")
+    cam = cv.VideoCapture(0)
+    counter = 0
+    limit = 20
+    while cam.isOpened():
+        _, frame = cam.read()
+        counter = extractFace(frame, name, counter)
+        # ESC to exit
+        if cv.waitKey(1) & 0xff == 27 or counter >= limit:
+            break
+
+    cam.release()
+    cv.destroyWindow("Webcam Capture")
+
+embedder = FaceNet()
+def getEmbedding(face_img):
+    face_img = face_img.astype("float32")
+    # makes array 4D, FaceNet requires this
+    face_img = np.expand_dims(face_img, axis=0)
+    yhat = embedder.embeddings(face_img)
+    return yhat[0]
+
+x, y = loadClasses("dataset")
+embedded_x = []
+for img in x:
+    embedded_x.append(getEmbedding(img))
+embedded_x = np.asarray(embedded_x)
+np.savez_compressed("faces_embeddings.npz", embedded_x, y)
