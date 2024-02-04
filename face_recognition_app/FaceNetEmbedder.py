@@ -1,16 +1,14 @@
 import cv2 as cv
 import os
 import numpy as np
-import tensorflow as tf
 from keras_facenet import FaceNet
 from uuid import uuid1
 from utils import createDir
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
 def extractFace(frame, name, counter):
     face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
-    faces = face_cascade.detectMultiScale(frame, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
+    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
     for (x,y,w,h) in faces:
         counter += 1
         face = frame[y:y+h, x:x+w]
@@ -38,6 +36,7 @@ def loadFaces(dir):
         path = dir + "/" + img
         face = cv.imread(path)
         face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
+        # FaceNet requires 160x160
         face = cv.resize(face, (160, 160))
         print(img, face.shape)
         faces.append(face)
@@ -69,17 +68,19 @@ def webCamCapture():
     cam.release()
     cv.destroyWindow("Webcam Capture")
 
-embedder = FaceNet()
-def getEmbedding(face_img):
+def getEmbedding(embedder, face_img):
     face_img = face_img.astype("float32")
     # makes array 4D, FaceNet requires this
     face_img = np.expand_dims(face_img, axis=0)
     yhat = embedder.embeddings(face_img)
     return yhat[0]
 
-x, y = loadClasses("dataset")
-embedded_x = []
-for img in x:
-    embedded_x.append(getEmbedding(img))
-embedded_x = np.asarray(embedded_x)
-np.savez_compressed("faces_embeddings.npz", embedded_x, y)
+def createEmbedding():
+    embedder = FaceNet()
+    webCamCapture()
+    x, y = loadClasses("dataset")
+    embedded_x = []
+    for img in x:
+        embedded_x.append(getEmbedding(embedder, img))
+    embedded_x = np.asarray(embedded_x)
+    np.savez_compressed("faces_embeddings.npz", embedded_x, y)
