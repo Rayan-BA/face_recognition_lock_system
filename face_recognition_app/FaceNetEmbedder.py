@@ -76,6 +76,7 @@ def getEmbedding(embedder, face_img):
     return yhat[0]
 
 def createEmbedding():
+    print("[INFO] Creating new embeddings...")
     embedder = FaceNet()
     webCamCapture()
     x, y = loadClasses("dataset")
@@ -84,3 +85,4 @@ def createEmbedding():
         embedded_x.append(getEmbedding(embedder, img))
     embedded_x = np.asarray(embedded_x)
     np.savez_compressed("faces_embeddings.npz", embedded_x, y)
+    print("[INFO] Embeddings done.")

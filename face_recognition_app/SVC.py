@@ -11,6 +11,7 @@ import pickle
 # print(y)
 
 def train():
+    print("[INFO] Training SVC model...")
     data = np.load("faces_embeddings.npz")
     embedded_x, y = data["arr_0"], data["arr_1"]
 
@@ -25,6 +26,7 @@ def train():
 
     with open("SVC_model.pkl", "wb") as f:
         pickle.dump(model, f)
+    print("[INFO] Training done.")
 
 # ypreds_train = model.predict(x_train)
 # ypreds_test = model.predict(x_test)
