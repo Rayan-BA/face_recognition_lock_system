@@ -5,6 +5,9 @@ import cv2 as cv
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from keras_facenet import FaceNet
+import tensorflow
+
+tensorflow.keras.utils.disable_interactive_logging()
 
 def svcPred():
     face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
