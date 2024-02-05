@@ -38,7 +38,7 @@ def loadFaces(dir):
         face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
         # FaceNet requires 160x160
         face = cv.resize(face, (160, 160))
-        print(img, face.shape)
+        # print(img, face.shape)
         faces.append(face)
     return faces
 
@@ -75,10 +75,13 @@ def getEmbedding(embedder, face_img):
     yhat = embedder.embeddings(face_img)
     return yhat[0]
 
+def collectFaces():
+    webCamCapture()
+
 def createEmbedding():
     print("[INFO] Creating new embeddings...")
     embedder = FaceNet()
-    webCamCapture()
+    # webCamCapture()
     x, y = loadClasses("dataset")
     embedded_x = []
     for img in x:
