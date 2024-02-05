@@ -9,6 +9,10 @@ import tensorflow
 
 tensorflow.keras.utils.disable_interactive_logging()
 
+# TODO:
+# - Anti-spoofing
+# - Optimzie speed
+
 def svcPred():
     face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
     model = pickle.load(open("SVC_model.pkl", "rb"))
@@ -48,16 +52,18 @@ def main():
     while True:
         print(" [INFO] Program started")
         print(""" [SELECT]
-            1) Create New Face Embeddings
-            2) Train SVC Model
-            3) Recognize Faces
+            1) Collect faces
+            2) Create New Face Embeddings
+            3) Train SVC Model
+            4) Recognize Faces
             
             Press any other key to exit.""")
         op = input(" Your selection: ")
         match op:
-            case "1": FaceNetEmbedder.createEmbedding()
-            case "2": SVC.train()
-            case "3": svcPred()
+            case "1": FaceNetEmbedder.collectFaces()
+            case "2": FaceNetEmbedder.createEmbedding()
+            case "3": SVC.train()
+            case "4": svcPred()
             case _: break
     print(" [INFO] Program ended")
 
