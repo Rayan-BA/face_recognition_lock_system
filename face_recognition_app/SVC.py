@@ -10,9 +10,12 @@ import pickle
 # y = data["arr_1"]
 # print(y)
 
+faces_embeddings_path = "./models/faces_embeddings.npz"
+SVC_model_path = "./models/SVC_model.pkl"
+
 def train():
     print("[INFO] Training SVC model...")
-    data = np.load("faces_embeddings.npz")
+    data = np.load(faces_embeddings_path)
     embedded_x, y = data["arr_0"], data["arr_1"]
 
     encoder = LabelEncoder()
@@ -24,7 +27,7 @@ def train():
     model = SVC(kernel="linear", probability=True)
     model.fit(x_train, y_train)
 
-    with open("SVC_model.pkl", "wb") as f:
+    with open(SVC_model_path, "wb") as f:
         pickle.dump(model, f)
     print("[INFO] Training done.")
 

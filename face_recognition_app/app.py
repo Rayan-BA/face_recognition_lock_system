@@ -5,18 +5,21 @@ import cv2 as cv
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from keras_facenet import FaceNet
-import tensorflow
+import tensorflow as tf
 
-tensorflow.keras.utils.disable_interactive_logging()
+tf.keras.utils.disable_interactive_logging()
 
 # TODO:
+# - Optimzie speed (multithreading or multiprocessing)
 # - Anti-spoofing
-# - Optimzie speed
+
+faces_embeddings_path = "./models/faces_embeddings.npz"
+SVC_model_path = "./models/SVC_model.pkl"
 
 def svcPred():
     face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
-    model = pickle.load(open("SVC_model.pkl", "rb"))
-    faces_embeddings = np.load("faces_embeddings.npz")
+    model = pickle.load(open(SVC_model_path, "rb"))
+    faces_embeddings = np.load(faces_embeddings_path)
     y = faces_embeddings["arr_1"]
     facenet = FaceNet()
     encoder = LabelEncoder()
