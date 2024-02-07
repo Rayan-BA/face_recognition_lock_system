@@ -2,6 +2,7 @@ import cv2 as cv
 import os
 import numpy as np
 from keras_facenet import FaceNet
+import concurrent
 from uuid import uuid1
 from utils import createDir
 
@@ -38,7 +39,7 @@ def loadFaces(dir):
         face = cv.imread(path)
         face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
         # FaceNet requires 160x160
-        face = cv.resize(face, (160, 160))
+        face = cv.resize(face, (160, 160)) # FaceNet().embeddings() already does this?
         # print(img, face.shape)
         faces.append(face)
     return faces
@@ -87,20 +88,32 @@ def collectFaces():
     cam.release()
     cv.destroyWindow("Webcam Capture")
 
-def getEmbedding(embedder, face_img):
+embedder = FaceNet()
+
+def getEmbedding(face_img):
     face_img = face_img.astype("float32")
     # makes array 4D, FaceNet requires this
     face_img = np.expand_dims(face_img, axis=0)
     yhat = embedder.embeddings(face_img)
     return yhat[0]
 
+# def appendEmbeddings(embedder, img):
+#     return getEmbedding(embedder, img)
+
 def createEmbedding():
     print("[INFO] Creating new embeddings...")
-    embedder = FaceNet()
     x, y = loadClasses("dataset")
-    embedded_x = []
-    for img in x:
-        embedded_x.append(getEmbedding(embedder, img))
+
+    # slowww
+    # embedded_x = []
+    # for img in x:
+    #     embedded_x.append(getEmbedding(img))
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        embedded_x = list(executor.map(getEmbedding, x))
+
     embedded_x = np.asarray(embedded_x)
     np.savez_compressed(faces_embeddings_path, embedded_x, y)
     print("[INFO] Embeddings done.")
+
+# createEmbedding()
