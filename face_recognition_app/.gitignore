@@ -1,7 +1,10 @@
 dataset/
 models/
+assets/
+antispoof-dataset/
 __pycache__/
 *.yml
 *.txt
 *.npz
 *.pkl
+*.env
