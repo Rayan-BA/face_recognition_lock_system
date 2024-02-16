@@ -1,105 +1,103 @@
 import os
+from shutil import rmtree
 import cv2 as cv
-from PIL import Image
 import numpy as np
-from time import time
+# from PIL import Image
+# from time import time
+# from sklearn.utils import shuffle
+from uuid import uuid1
+from dotenv import load_dotenv
 
-face_cascade = cv.CascadeClassifier(cv.data.haarcascades + "haarcascade_frontalface_default.xml")
-dataset_path = "dataset"
+load_dotenv()
+face_cascade = cv.CascadeClassifier(os.getenv("face_cascade"))
+dataset_path = os.getenv("dataset_path")
 
-# Just a demo for face detection
-def detectFace():
-    print(" [INFO] Detecting faces...")
-    video_capture = cv.VideoCapture(0)
-    while video_capture.isOpened():
-        ret, frame = video_capture.read()
-        frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame_gray = cv.equalizeHist(frame_gray)
-        # Detect faces
-        faces = face_cascade.detectMultiScale(frame_gray, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
-        for (x,y,w,h) in faces:
-            frame = cv.rectangle(frame, (x, y), (x+w, y+h), (50,50,255), 1)
-        cv.imshow("Detector", frame)
-        cv.setWindowProperty("Detector", cv.WND_PROP_TOPMOST, 1)
-        # ESC to exit
-        if cv.waitKey(1) & 0xff == 27:
-         break
-    
-    video_capture.release()
-    cv.destroyWindow("Detector")
+def _loadFaces(sub_dir):
+    faces = []
+    for img in os.listdir(sub_dir):
+        path = sub_dir + "/" + img
+        face = cv.imread(path)
+        face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
+        # FaceNet requires 160x160
+        face = cv.resize(face, (160, 160))
+        # print(img, face.shape)
+        faces.append(face)
+    return faces
 
-def getFacesIdsNames(path):
-    imagePaths = [os.path.join(path,f) for f in os.listdir(path)]     
-    faceSamples=[]
-    ids = []
-    names = []
-    for imagePath in imagePaths:
-        # grayscale
-        PIL_img = Image.open(imagePath).convert('L')
-        # PIL_img = PIL_img.resize((150,150))
-        img_numpy = np.array(PIL_img,'uint8')
-        id = int(os.path.split(imagePath)[-1].split(".")[1])
-        name = os.path.split(imagePath)[-1].split(".")[0]
-        faces = face_cascade.detectMultiScale(img_numpy)
-        for (x,y,w,h) in faces:
-            faceSamples.append(img_numpy[y:y+h,x:x+w])
-            ids.append(id)
-            names.append(name)
-    return faceSamples,ids, names
+def loadClasses(dir):
+    x, y = [], []
+    for sub_dir in os.listdir(dir):
+        path = dir + "/" + sub_dir
+        faces = _loadFaces(path)
+        names = [sub_dir for _ in range(len(faces))]
+        x.extend(faces)
+        y.extend(names)
+    # x, y = shuffle(x, y) can be shuffled in train_test_split() can be shuffled later
+    return np.asarray(x), np.asarray(y)
 
-def readIdFromFile():
-    file_path = "last_id.txt"
-    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-        with open(file_path, "w") as file:
-            file.write("1")
-    
-    with open(file_path, "r") as file:
-        return file.read()
-
-def incrementId(id):
-    id += 1
-    with open("last_id.txt", "w") as file:
-        file.write(str(id))
-
-def createDir(dir_name):
+def _createDir(dir_name):
     if not os.path.isdir(dir_name):
         os.makedirs(dir_name)
 
-def collectFaceSamples():
-    print(" [INFO] Collecting face samples...")
+def _removeDir(dir_name):
+    if os.path.isdir(dir_name):
+        rmtree(dir_name)
 
-    createDir(dataset_path)
+def _extractFace(frame, name, counter):
+    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
+    for (x,y,w,h) in faces:
+        counter += 1
+        face = frame[y:y+h, x:x+w]
+        # face = processFace(face)
+        _saveFace(face, name)
+        cv.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
+    
+    return counter
 
-    id = readIdFromFile()
+def _saveFace(face, name):
+    path = f"{dataset_path}/{name}"
+    # uuid is 128 bits, shift right by 102 bits to shorten
+    random_id = uuid1().int >> 102
+    _createDir(path)
+    cv.imwrite(f"{path}/{random_id}.jpg", face)
 
-    name = str(input("\n [INPUT] Enter your name: "))
+def _drawProgBar(frame, w, h, prog):
+    padding = 20
+    prog_bar_start = padding
+    prog_bar_end = w-padding
 
-    createDir(f"{dataset_path}/{name}")
+    cv.rectangle(frame, (prog_bar_start, h-30), (prog_bar_end, h-10), (0,0,255), 2)
 
-    time_limit = 10
+    prog_bar = int(prog * prog_bar_end/100)
+    # thickness -1 for fill
+    if prog_bar > padding:
+        cv.rectangle(frame, (prog_bar_start, h-30), (prog_bar, h-10), (0,0,255), -1)
 
-    t0 = time()
-    video_capture = cv.VideoCapture(0)
-    while video_capture.isOpened():
-        ret, frame = video_capture.read()
-        frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        frame_gray = cv.equalizeHist(frame_gray)
-        faces = face_cascade.detectMultiScale(frame_gray, minSize=(100,100))
-
-        t1 = time()
-        seconds = t1 - t0
-        for (x,y,w,h) in faces:
-            cv.putText(frame, f"{str(int(seconds))}/{time_limit}", (30, 40), cv.FONT_HERSHEY_PLAIN, 2, (50,50,255), 2)
-            cv.rectangle(frame, (x,y), (x+w,y+h), (50,50,255), 1)
-            # Save the captured image into the data folder
-            cv.imwrite(f"{dataset_path}/{name}/{name}.{id}.{seconds}.jpg", frame_gray[y:y+h, x:x+w])
-        cv.imshow("Collector", frame)
-        cv.setWindowProperty('Collector', cv.WND_PROP_TOPMOST, 1)
-        # Take 4 face sample and stop video
-        if seconds > time_limit or cv.waitKey(1) & 0xff == 27:
+# Open webcam and do real-time face detection and extraction
+def collectFaces():
+    # TODO handle existing name, currently appends to folder with same name
+    # have an option to override
+    name = input(" [INPUT] Enter your name: ")
+    
+    # if os.path.isdir(f"{dataset_path}/{name}"):
+    #     ans = input(f"{name} is already saved, ")
+    
+    cam = cv.VideoCapture(0)
+    counter = 0
+    limit = 100
+    frame_width  = int(cam.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cam.get(cv.CAP_PROP_FRAME_HEIGHT))
+    # print(frame_width, frame_height)
+    while cam.isOpened():
+        _, frame = cam.read()
+        counter = _extractFace(frame, name, counter)
+        _drawProgBar(frame, frame_width, frame_height, int((counter/limit)*100))
+        cv.imshow("Webcam Capture", frame)
+        cv.setWindowProperty("Webcam Capture", cv.WND_PROP_TOPMOST, 1)
+        # ESC to exit
+        if cv.waitKey(1) & 0xff == 27 or counter >= limit:
             break
 
-    incrementId(int(id))
-
-    video_capture.release()
-    cv.destroyWindow("Collector")
+    cam.release()
+    cv.destroyWindow("Webcam Capture")

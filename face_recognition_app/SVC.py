@@ -4,14 +4,15 @@ from sklearn.svm import SVC
 # from sklearn.metrics import accuracy_score
 import numpy as np
 import pickle
+from os import getenv
+from dotenv import load_dotenv
+from keras_facenet import FaceNet
+import cv2 as cv
 
-# data = np.load("faces_embeddings.npz")
-# embedded_x = data["arr_0"]
-# y = data["arr_1"]
-# print(y)
 
-faces_embeddings_path = "./models/faces_embeddings.npz"
-SVC_model_path = "./models/SVC_model.pkl"
+load_dotenv()
+faces_embeddings_path = getenv("faces_embeddings_path")
+SVC_model_path = getenv("SVC_model_path")
 
 def train():
     print("[INFO] Training SVC model...")
@@ -31,9 +32,46 @@ def train():
         pickle.dump(model, f)
     print("[INFO] Training done.")
 
+def recognize():
+    face_cascade = cv.CascadeClassifier(getenv("face_cascade"))
+    model = pickle.load(open(SVC_model_path, "rb"))
+    faces_embeddings = np.load(faces_embeddings_path)
+    y = faces_embeddings["arr_1"]
+    facenet = FaceNet()
+    encoder = LabelEncoder()
+    encoder.fit(y)
+    encoder.transform(y)
+    video_capture = cv.VideoCapture(0)
+    while video_capture.isOpened():
+        ret, frame = video_capture.read()
+        frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        rgb_img = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        faces = face_cascade.detectMultiScale(frame_gray, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
+        for (x,y,w,h) in faces:
+            img = rgb_img[y:y+h, x:x+w]
+            img = cv.resize(img, (160,160))
+            img = np.expand_dims(img, axis=0)
+            ypred = facenet.embeddings(img)
+            name_pred = model.predict(ypred)
+            conf = int(max(model.predict_proba(ypred)[0]) * 100)
+            name = encoder.inverse_transform(name_pred)[0]
+            if conf > 90:
+                print("Door unlocked.")
+                return
+            cv.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 1)
+            cv.putText(frame, str(f"{name}  {conf}"), (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 3, cv.LINE_AA)
+            
+        cv.imshow("Recognizer", frame)
+        cv.setWindowProperty("Recognizer", cv.WND_PROP_TOPMOST, 1)
+        # ESC to exit
+        if cv.waitKey(1) & 0xff == 27:
+         break
+    
+    video_capture.release()
+    cv.destroyWindow("Recognizer")
+
 # ypreds_train = model.predict(x_train)
 # ypreds_test = model.predict(x_test)
 
 # print(accuracy_score(y_train, ypreds_train))
 # print(accuracy_score(y_test, ypreds_test))
-
