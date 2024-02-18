@@ -24,6 +24,10 @@ By doing so, you can significantly reduce the amount of time required for traini
 
 # Define paths
 data_dir = "D:/CelebA_Spoof"
+live_dir = os.path.join(data_dir, "live")
+spoof_dir = os.path.join(data_dir, "spoof")
+train_images_dir = os.path.join(data_dir, "training")
+test_images_dir = os.path.join(data_dir, "testing")
 
 def extract_lbp_features(image_directory):
     # Extracts Local Binary Pattern (LBP) features from all images within the specified directory
@@ -53,20 +57,14 @@ def extract_lbp_features_webcam(frame):
 
 def create_training_testing_dirs(data_dir):
     # Create directories if they don't exist
-    train_images_dir = os.path.join(data_dir, "training")
-    test_images_dir = os.path.join(data_dir, "testing")
     if not os.path.exists(train_images_dir):
         os.makedirs(train_images_dir)
     if not os.path.exists(test_images_dir):
         os.makedirs(test_images_dir)
 
 # TODO fix
-def split_training_testing(data_dir):
+def split_training_testing():
     # Divide live and spoof images randomly into train and test sets
-    live_dir = os.path.join(data_dir, "live")
-    spoof_dir = os.path.join(data_dir, "spoof")
-    train_images_dir = os.path.join(data_dir, "training")
-    test_images_dir = os.path.join(data_dir, "testing")
     for dir_name, split_ratio in zip((live_dir, spoof_dir), (0.75, 0.75)):
         files = os.listdir(dir_name)
         num_files = len(files)
