@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 faces_embeddings_path = getenv("faces_embeddings_path")
+dataset_path = getenv("dataset_path")
 
 embedder = FaceNet()
 def getOneEmbedding(face_img):
@@ -19,8 +20,8 @@ def getOneEmbedding(face_img):
 
 def createEmbeddings():
     print("[INFO] Creating new embeddings...")
-    x, y = loadClasses("dataset")
-
+    x, y = loadClasses(dataset_path)
+    
     # slowww
     # embedded_x = []
     # for img in x:

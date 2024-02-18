@@ -3,7 +3,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
 # from sklearn.metrics import accuracy_score
 import numpy as np
-import pickle
+import joblib
 from os import getenv
 from dotenv import load_dotenv
 from keras_facenet import FaceNet
@@ -29,18 +29,18 @@ def train():
     model.fit(x_train, y_train)
 
     with open(SVC_model_path, "wb") as f:
-        pickle.dump(model, f)
+        joblib.dump(model, f)
     print("[INFO] Training done.")
 
 def recognize():
     face_cascade = cv.CascadeClassifier(getenv("face_cascade"))
-    model = pickle.load(open(SVC_model_path, "rb"))
+    model = joblib.load(open(SVC_model_path, "rb"))
     faces_embeddings = np.load(faces_embeddings_path)
-    y = faces_embeddings["arr_1"]
+    n = faces_embeddings["arr_1"]
     facenet = FaceNet()
     encoder = LabelEncoder()
-    encoder.fit(y)
-    encoder.transform(y)
+    encoder.fit(n)
+    encoder.transform(n)
     video_capture = cv.VideoCapture(0)
     while video_capture.isOpened():
         ret, frame = video_capture.read()
@@ -55,9 +55,9 @@ def recognize():
             name_pred = model.predict(ypred)
             conf = int(max(model.predict_proba(ypred)[0]) * 100)
             name = encoder.inverse_transform(name_pred)[0]
-            if conf > 90:
-                print("Door unlocked.")
-                return
+            # if conf > 90:
+            #     print("Door unlocked.")
+            #     return
             cv.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 1)
             cv.putText(frame, str(f"{name}  {conf}"), (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 3, cv.LINE_AA)
             

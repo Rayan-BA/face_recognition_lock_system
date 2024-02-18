@@ -2,11 +2,9 @@ import os
 from shutil import rmtree
 import cv2 as cv
 import numpy as np
-# from PIL import Image
-# from time import time
-# from sklearn.utils import shuffle
 from uuid import uuid1
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 load_dotenv()
 face_cascade = cv.CascadeClassifier(os.getenv("face_cascade"))
@@ -32,7 +30,6 @@ def loadClasses(dir):
         names = [sub_dir for _ in range(len(faces))]
         x.extend(faces)
         y.extend(names)
-    # x, y = shuffle(x, y) can be shuffled in train_test_split() can be shuffled later
     return np.asarray(x), np.asarray(y)
 
 def _createDir(dir_name):
@@ -52,8 +49,14 @@ def _extractFace(frame, name, counter):
         # face = processFace(face)
         _saveFace(face, name)
         cv.rectangle(frame, (x, y), (x+w, y+h), (0,0,255), 2)
-    
     return counter
+
+def extractFace(frame):
+    # gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(frame, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
+    for (x,y,w,h) in faces:
+        face = frame[y:y+h, x:x+w]
+        return face
 
 def _saveFace(face, name):
     path = f"{dataset_path}/{name}"
@@ -78,6 +81,7 @@ def _drawProgBar(frame, w, h, prog):
 def collectFaces():
     # TODO handle existing name, currently appends to folder with same name
     # have an option to override
+    # tqdm as progress bar
     name = input(" [INPUT] Enter your name: ")
     
     # if os.path.isdir(f"{dataset_path}/{name}"):
@@ -101,3 +105,5 @@ def collectFaces():
 
     cam.release()
     cv.destroyWindow("Webcam Capture")
+
+# collectFaces()
