@@ -10,11 +10,10 @@ from facenet_pytorch import InceptionResnetV1
 import torchvision.transforms as transforms
 import torch
 import cv2 as cv
-
 load_dotenv()
 
-faces_embeddings_path = "./models/torch_embeddings.npz"
-SVC_model_path = "./models/torch_svc.joblib"
+faces_embeddings_path = getenv("faces_embeddings_path")
+SVC_model_path = getenv("SVC_model_path")
 
 def train():
     print("[INFO] Training SVC model...")
@@ -51,14 +50,11 @@ def recognize():
         for (x, y, w, h) in faces:
             img = rgb_img[y:y+h, x:x+w]
             img = cv.resize(img, (160,160))
-            # img = np.expand_dims(img, axis=0)
             tensorImg = transforms.ToTensor()(img)
-            # tensorImg = torch.stack(tensorImg)
-            # print(tensorImg)
-            # exit()
+            # expands dims, equivalent to np.expand_dims(img, axis=0)
             tensorImg = tensorImg.unsqueeze(0)
-            ypred = restnet(tensorImg)
-            ypred = ypred.detach().numpy()
+            # .cpu() just in case gpu is used
+            ypred = restnet(tensorImg).detach().cpu().numpy()
             name_pred = model.predict(ypred)
             conf = int(max(model.predict_proba(ypred)[0]) * 100)
             name = encoder.inverse_transform(name_pred)[0]
@@ -75,4 +71,4 @@ def recognize():
     cv.destroyWindow("Recognizer")
 
 # train()
-recognize()
+# recognize()

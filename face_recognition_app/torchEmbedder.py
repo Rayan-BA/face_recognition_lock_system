@@ -3,13 +3,14 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
 import numpy as np
-import pandas as pd
-import os
+from tqdm import tqdm
+from multiprocessing import cpu_count
 
-workers = 0 if os.name == 'nt' else 4
+# prob not optimal
+torch.set_num_threads(cpu_count() - 2)
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print('Running on device: {}'.format(device))
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Running on device: {device}")
 
 mtcnn = MTCNN(
     image_size=160, margin=0, min_face_size=20,
@@ -17,25 +18,27 @@ mtcnn = MTCNN(
     device=device
 )
 
-resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+resnet = InceptionResnetV1(pretrained="vggface2", device=device).eval()
 
 def collate_fn(x):
     return x[0]
 
-dataset = datasets.ImageFolder('./dataset')
-dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
-loader = DataLoader(dataset, collate_fn=collate_fn, num_workers=workers)
+def createEmbeddings(data:str, save_to_path:str):
+    print("[INFO] Creating new embeddings...")
+    dataset = datasets.ImageFolder(data)
+    dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
+    loader = DataLoader(dataset, collate_fn=collate_fn)
+    
+    aligned = []
+    names = []
+    for x, y in tqdm(loader):
+        x_aligned = mtcnn(x)
+        if x_aligned is not None:
+            aligned.append(x_aligned)
+            names.append(dataset.idx_to_class[y])
 
-aligned = []
-names = []
-for x, y in loader:
-    x_aligned, prob = mtcnn(x, return_prob=True)
-    if x_aligned is not None:
-        print('Face detected with probability: {:8f}'.format(prob))
-        aligned.append(x_aligned)
-        names.append(dataset.idx_to_class[y])
+    aligned = torch.stack(aligned).to(device)
+    embeddings = resnet(aligned).detach().cpu()
 
-aligned = torch.stack(aligned).to(device)
-embeddings = resnet(aligned).detach().cpu()
-
-np.savez_compressed("./models/torch_embeddings.npz", embeddings, names)
+    np.savez_compressed(save_to_path, embeddings, names)
+    print("[INFO] Embedding done.")

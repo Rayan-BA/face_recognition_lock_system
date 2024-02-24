@@ -1,23 +1,16 @@
-import SVC
-import tensorflow as tf
-import FaceNetEmbedder
+import torch_SVC
+import torchEmbedder
 import utils
 from os import getenv
 from dotenv import load_dotenv
-from os import getenv
-
-tf.keras.utils.disable_interactive_logging()
 
 # TODO:
 # - Anti-spoofing
-# - Optimzie speed (multithreading or multiprocessing) done but maybe improve?
-# - Lower keras load time?
-
 
 load_dotenv()
-faces_embeddings_path = getenv("faces_embeddings_path")
+embeddings_path = getenv("faces_embeddings_path")
 SVC_model_path = getenv("SVC_model_path")
-
+dataset_path = getenv("dataset_path")
 
 def main():
     print(" [INFO] Program started")
@@ -32,9 +25,9 @@ def main():
         op = input(" Your selection: ")
         match op:
             case "1": utils.collectFaces()
-            case "2": FaceNetEmbedder.createEmbeddings()
-            case "3": SVC.train()
-            case "4": SVC.recognize()
+            case "2": torchEmbedder.createEmbeddings(dataset_path, embeddings_path)
+            case "3": torch_SVC.train()
+            case "4": torch_SVC.recognize()
             case _: break
     print(" [INFO] Program ended")
 
