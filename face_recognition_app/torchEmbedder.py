@@ -23,22 +23,30 @@ resnet = InceptionResnetV1(pretrained="vggface2", device=device).eval()
 def collate_fn(x):
     return x[0]
 
-def createEmbeddings(data:str, save_to_path:str):
+def createEmbeddings(data:str, embeddings_path:str):
     print("[INFO] Creating new embeddings...")
     dataset = datasets.ImageFolder(data)
     dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
     loader = DataLoader(dataset, collate_fn=collate_fn)
+
+    existing_embedded_data, existing_labels = np.load(embeddings_path)["arr_0"], np.load(embeddings_path)["arr_1"]
     
     aligned = []
-    names = []
+    new_labels = []
     for x, y in tqdm(loader):
+        if np.isin(dataset.idx_to_class[y], existing_labels): continue
         x_aligned = mtcnn(x)
         if x_aligned is not None:
             aligned.append(x_aligned)
-            names.append(dataset.idx_to_class[y])
+            new_labels.append(dataset.idx_to_class[y])
 
-    aligned = torch.stack(aligned).to(device)
-    embeddings = resnet(aligned).detach().cpu()
+    if len(aligned) > 0:
+        aligned = torch.stack(aligned).to(device)
+        new_embeddings = resnet(aligned).detach().cpu()
+        
+        combined_embeddings = np.concatenate([existing_embedded_data, new_embeddings])
+        combined_labels = np.concatenate([existing_labels, new_labels])
 
-    np.savez_compressed(save_to_path, embeddings, names)
+        np.savez(embeddings_path, combined_embeddings, combined_labels)
+
     print("[INFO] Embedding done.")
