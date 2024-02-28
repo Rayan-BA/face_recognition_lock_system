@@ -29,7 +29,10 @@ def createEmbeddings(data:str, embeddings_path:str):
     dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
     loader = DataLoader(dataset, collate_fn=collate_fn)
 
-    existing_embedded_data, existing_labels = np.load(embeddings_path)["arr_0"], np.load(embeddings_path)["arr_1"]
+    try:
+        existing_embedded_data, existing_labels = np.load(embeddings_path)["arr_0"], np.load(embeddings_path)["arr_1"]
+    except:
+        existing_embedded_data, existing_labels = [], []
     
     aligned = []
     new_labels = []

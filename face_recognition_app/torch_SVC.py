@@ -1,14 +1,12 @@
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
-# from sklearn.metrics import accuracy_score
 import numpy as np
 import joblib
 from os import getenv
 from dotenv import load_dotenv
 from facenet_pytorch import InceptionResnetV1
 import torchvision.transforms as transforms
-import torch
 import cv2 as cv
 load_dotenv()
 
@@ -28,7 +26,7 @@ def train():
 
     model = SVC(kernel="linear", probability=True)
     model.fit(x_train, y_train)
-
+    
     with open(SVC_model_path, "wb") as f:
         joblib.dump(model, f)
     print("[INFO] Training done.")
@@ -69,6 +67,3 @@ def recognize():
     
     video_capture.release()
     cv.destroyWindow("Recognizer")
-
-# train()
-# recognize()
