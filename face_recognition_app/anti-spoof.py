@@ -1,5 +1,7 @@
 import os
+import warnings
 import cv2 as cv
+from sklearn.calibration import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
@@ -8,9 +10,16 @@ from dotenv import load_dotenv
 import numpy as np
 import joblib
 from tqdm import tqdm
-from utils import extractFace
+from utils import extractFace, loadClasses
+from FaceNetEmbedder import createEmbeddings
+from keras_facenet import FaceNet
 
 load_dotenv()
+
+# To slience this warning:
+# FutureWarning: elementwise comparison failed; returning scalar instead, but in the 
+# future will perform elementwise comparison
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 """
 perplexity.ai: mixtral-7b
@@ -43,9 +52,9 @@ def extract_lbp_features(image_directory):
             if img is None: continue
             # print(img, type(img), filename)
             img = cv.resize(img, (128, 128))
-            lbp = local_binary_pattern(img, P=8, R=1, method="uniform")
+            lbp = local_binary_pattern(img, P=16, R=1, method="uniform")
             # hist, _ = np.histogram(lbp.ravel(), bins=[0]+range(91)+[2**8-1], density=True)
-            hist, _ = np.histogram(lbp, bins=[0, 8, 16, 32, 64, 128], range=(0, 129), density=True)
+            hist, _ = np.histogram(lbp, bins=[0, 16, 32, 64, 128, 256], range=(0, 256), density=True)
             features.append(hist)
             labels.append(subdir == "live")
     np.savez_compressed("./models/anti-spoof-lbp-features.npz", np.asarray(features), np.asarray(labels).astype(int))
@@ -54,6 +63,16 @@ def extract_lbp_features_webcam(frame):
     lbp = local_binary_pattern(frame, P=8, R=1, method="uniform")
     hist, _ = np.histogram(lbp, bins=[0, 8, 16, 32, 64, 128], range=(0, 129), density=True)
     return hist
+
+def extract_fn_embeddings(image_directory):
+    createEmbeddings(data=loadClasses(image_directory), save_to_path="./models/anti-spoof-fn-embeddings.npz")
+
+embedder = FaceNet()
+def extract_fn_embed_webcam(img):
+    img = cv.resize(img, (160,160))
+    img = np.expand_dims(img, axis=0)
+    ypred = embedder.embeddings(img)
+    return ypred
 
 def create_training_testing_dirs(data_dir):
     # Create directories if they don't exist
@@ -79,6 +98,8 @@ def split_training_testing():
             
             os.makedirs(dst_folder, exist_ok=True)
             os.rename(src_file, dst_file)
+            # print(dst_folder)
+            # print(src_file, dst_file)
 
         # Move remaining files to testing directory
         for i, file_name in enumerate(files):
@@ -89,13 +110,20 @@ def split_training_testing():
 
                 os.makedirs(dst_folder, exist_ok=True)
                 os.rename(src_file, dst_file)
+                # print(dst_folder)
+                # print(src_file, dst_file)
 
-def train_SVC():
-    data = np.load("./models/anti-spoof-lbp-features.npz")
+
+def train_SVC(data, save_to_path):
+    # data = np.load("./models/anti-spoof-lbp-features.npz")
     X, y = data["arr_0"], data["arr_1"]
 
+    encoder = LabelEncoder()
+    encoder.fit(y)
+    y = encoder.transform(y)
+
     # Split into train & validation sets
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, shuffle=True)
 
     # Initialize SVC classifier
     model = SVC(kernel="linear", probability=True)
@@ -115,26 +143,37 @@ def train_SVC():
     # print("\nTest Report:\n", classification_report([0]*len(X_test), y_test_pred))
 
     # Save model
-    with open("./models/SVC_anti-spoof.joblib", "wb") as f:
+    with open(save_to_path, "wb") as f:
         joblib.dump(model, f)
 
 def predict():
     face_cascade = cv.CascadeClassifier(os.getenv("face_cascade"))
-    model = joblib.load(open("./models/SVC_anti-spoof.joblib", "rb"))
+    model = joblib.load(open("./models/SVC_anti-spoof_lbp.joblib", "rb"))
+    # embeddings = np.load("./models/anti-spoof-fn-embeddings.npz")
+    # n = embeddings["arr_1"]
+    # encoder = LabelEncoder()
+    # encoder.fit(n)
+    # encoder.transform(n)
     video_capture = cv.VideoCapture(0)
     while video_capture.isOpened():
         ret, frame = video_capture.read()
         frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        # rgb_img = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         faces = face_cascade.detectMultiScale(frame_gray, scaleFactor=1.3, minNeighbors=5, minSize=(100,100))
         for (x,y,w,h) in faces:
             lbp = extract_lbp_features_webcam(frame_gray).reshape(1, -1)
             # print(lbp)
+            # img = rgb_img[y:y+h, x:x+w]
+            # emb = extract_fn_embed_webcam(img)
             ypred = model.predict(lbp)
+            # pred = encoder.inverse_transform(ypred)
+            # print(ypred,pred)
+            # exit()
             # conf = int(max(model.predict_proba(ypred)[0]) * 100)
-            if ypred == 1: pred = "real"
-            elif ypred == 0: pred = "spoof"
-            else: pred = "unknown"
-            cv.putText(frame, str(f"{pred}  {ypred}"), (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 3, cv.LINE_AA)
+            # if ypred == 1: pred = "real"
+            # elif ypred == 0: pred = "spoof"
+            # else: pred = "unknown"
+            cv.putText(frame, str(f"{ypred}"), (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 3, cv.LINE_AA)
 
         cv.imshow("Predictor", frame)
         cv.setWindowProperty("Predictor", cv.WND_PROP_TOPMOST, 1)
@@ -145,6 +184,7 @@ def predict():
     video_capture.release()
     cv.destroyWindow("Predictor")
 
-extract_lbp_features(train_images_dir)
-train_SVC()
+# extract_fn_embeddings(train_images_dir)
+# extract_lbp_features(train_images_dir)
+# train_SVC(np.load("./models/anti-spoof-lbp-features.npz"), "./models/SVC_anti-spoof_lbp.joblib")
 predict()
