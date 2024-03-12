@@ -1,0 +1,3 @@
+[submodule "user_interface"]
+	path = user_interface
+	url = https://github.com/Naifpc/flaskGP.git
