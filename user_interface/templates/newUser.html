@@ -1,0 +1,28 @@
+{% extends 'index.html' %}
+
+{% block head %}{% endblock %}
+
+{% block body %}
+<h2>New User</h2>
+
+<form action="{{url_for('newUser')}}" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="exampleInputEmail1" class="form-label">User Name</label>
+        <input type="text" class="form-control shadow-sm" name="username">
+    </div>
+
+    <div>
+        <img src="{{ url_for('video') }}" class="rounded shadow-sm" width="30%" name="image">
+    </div>
+
+    <p>OR you can upload</p>
+
+    <div class="input-group mb-3">
+        <input type="file" class="form-control shadow-sm" id="inputGroupFile02" name="file" required>
+        <label class="input-group-text" for="inputGroupFile02">Upload</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add User</button>
+
+</form>
+{% endblock %}

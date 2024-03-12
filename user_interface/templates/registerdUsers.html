@@ -1,0 +1,32 @@
+{% extends 'index.html' %}
+
+{% block head %}{% endblock %}
+
+{% block body %}
+
+<h2>Registerd Users</h2>
+
+
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for item in values %}
+    <div class="col">
+        <div class="card h-100 shadow">
+            <image class="card-img-top" src="{{ url_for('download', upload_id=item.user_id) }}"></image>
+            <div class="card-body">
+                <h5 class="card-title">{{item.name}}</h5>
+                <p class="card-text"></p>
+                <form action="{{url_for('deleteUser')}}" method="post">
+                    <button type="submit" class="btn btn-danger btn-sm" name="delete" value="{{item.name}}">Delete
+                        user</button>
+                </form>
+            </div>
+            <div class="card-footer">
+                <small class="text-body-secondary">Created at {{ item.created_at.strftime("%b %d %Y ") }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
