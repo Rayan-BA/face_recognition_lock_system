@@ -23,21 +23,23 @@ resnet = InceptionResnetV1(pretrained="vggface2", device=device).eval()
 def collate_fn(x):
     return x[0]
 
-def createEmbeddings(data:str, embeddings_path:str):
+def create_embeddings(dataset_path, embeddings_path, skip_existing_labels=True):
     print("[INFO] Creating new embeddings...")
-    dataset = datasets.ImageFolder(data)
+    dataset = datasets.ImageFolder(dataset_path)
     dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
     loader = DataLoader(dataset, collate_fn=collate_fn)
 
     try:
-        existing_embedded_data, existing_labels = np.load(embeddings_path)["arr_0"], np.load(embeddings_path)["arr_1"]
+        embed = np.load(embeddings_path)
+        existing_embedded_data, existing_labels = embed["arr_0"], embed["arr_1"]
     except:
         existing_embedded_data, existing_labels = [], []
     
+    # print(existing_labels);exit()
     aligned = []
     new_labels = []
     for x, y in tqdm(loader):
-        if np.isin(dataset.idx_to_class[y], existing_labels): continue
+        if skip_existing_labels and np.isin(dataset.idx_to_class[y], dataset.classes): continue
         x_aligned = mtcnn(x)
         if x_aligned is not None:
             aligned.append(x_aligned)
@@ -47,9 +49,11 @@ def createEmbeddings(data:str, embeddings_path:str):
         aligned = torch.stack(aligned).to(device)
         new_embeddings = resnet(aligned).detach().cpu()
         
-        combined_embeddings = np.concatenate([existing_embedded_data, new_embeddings])
-        combined_labels = np.concatenate([existing_labels, new_labels])
-
-        np.savez(embeddings_path, combined_embeddings, combined_labels)
+        if skip_existing_labels:
+            combined_embeddings = np.concatenate([existing_embedded_data, new_embeddings])
+            combined_labels = np.concatenate([existing_labels, new_labels])
+            np.savez(embeddings_path, combined_embeddings, combined_labels)
+        else:
+            np.savez(embeddings_path, new_embeddings, new_labels)
 
     print("[INFO] Embedding done.")

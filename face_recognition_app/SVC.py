@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 from keras_facenet import FaceNet
 import cv2 as cv
 
+class SVC:
+    def __init__(self, data, model) -> None:
+        pass
 
 load_dotenv()
 faces_embeddings_path = getenv("faces_embeddings_path")

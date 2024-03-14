@@ -1,16 +1,20 @@
 # import cv2 as cv
-from os import getenv
+# from os import getenv
 import numpy as np
 from keras_facenet import FaceNet
 import concurrent
-from utils import loadClasses
-from dotenv import load_dotenv
-
-load_dotenv()
-faces_embeddings_path = getenv("faces_embeddings_path")
-dataset_path = getenv("dataset_path")
+import tensorflow as tf
+from tqdm import tqdm
+# from utils import loadClasses
+# from dotenv import load_dotenv
+tf.keras.utils.disable_interactive_logging()
+from time import time
+# load_dotenv()
+# faces_embeddings_path = getenv("faces_embeddings_path")
+# dataset_path = getenv("dataset_path")
 
 embedder = FaceNet()
+
 def getOneEmbedding(face_img):
     face_img = face_img.astype("float32")
     # makes array 4D, FaceNet requires this
@@ -18,19 +22,21 @@ def getOneEmbedding(face_img):
     yhat = embedder.embeddings(face_img)
     return yhat[0]
 
-def createEmbeddings():
+def createEmbeddings(data: tuple, save_to_path: str):
     print("[INFO] Creating new embeddings...")
-    x, y = loadClasses(dataset_path)
+    x, y = data
     
     # slowww
     # embedded_x = []
     # for img in x:
     #     embedded_x.append(getOneEmbedding(img))
     
+    # t0 = time()
     # fast
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        embedded_x = list(executor.map(getOneEmbedding, x))
-
+        embedded_x = list(tqdm(executor.map(getOneEmbedding, x)))
+    # t1 = time()
+    # print("tensorflow facenet: ", t1-t0)
     embedded_x = np.asarray(embedded_x)
-    np.savez_compressed(faces_embeddings_path, embedded_x, y)
+    np.savez_compressed(save_to_path, embedded_x, y)
     print("[INFO] Embeddings done.")
