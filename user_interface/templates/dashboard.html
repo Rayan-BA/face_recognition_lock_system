@@ -1,0 +1,48 @@
+{% extends 'index.html' %}
+
+
+{% block head %}{% endblock %}
+
+{% block body %}
+<h2>Dashboard</h2>
+<div class="card mb-3 shadow">
+  <img src="static\images\Enter_face_panel.png" class="card-img-top object-fit-contain" alt="Enter_face_panel.png">
+  <div class="card-body">
+    <h5 class="card-title">Welcome {{username}}</h5>
+    <p class="card-text">Enter Face revolutionizes the realm of security with its innovative approach to face
+      recognition technology.</p>
+    <p class="card-text"><small><a href="https://en.wikipedia.org/wiki/Facial_recognition_system"
+          class="card-text">learn more</a></small></p>
+  </div>
+</div>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  <div class="col">
+    <div class="card h-100 p-2 shadow">
+      <h1 class="m-3"><i class="bi bi-people"></i> {{num_of_users}}</h1>
+      <div class="card-body">
+        <h5 class="card-title">Registerd Userers</h5>
+        <small><a href="{{url_for('registerdUsers')}}" class="card-text">show more</a></small>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card h-100 p-2 shadow">
+      <h1 class="m-3"><i class="bi bi-box-arrow-in-right"></i> {{num_of_entries}}</h1>
+      <div class="card-body">
+        <h5 class="card-title">Entries</h5>
+        <small><a href="{{url_for('history')}}" class="card-text">show more</a></small>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card h-100 p-2 shadow">
+      <h1 class="m-3"><i class="bi bi-exclamation-triangle"></i> {{num_of_alerts}}</h1>
+      <div class="card-body">
+        <h5 class="card-title">Alerts</h5>
+        <small><a href="{{url_for('history')}}" class="card-text">show more</a></small>
+      </div>
+    </div>
+  </div>
+
+
+  {% endblock %}

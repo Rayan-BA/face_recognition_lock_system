@@ -1,0 +1,116 @@
+
+/* Set the width of the sidebar */
+.sidebar {
+  height: 100%;
+  width: 20%;
+  min-width: 250px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding-top: 10px;
+}
+/* Style sidebar links */
+.sidebar a {
+  padding: 10px 15px;
+  text-decoration: none;
+  font-size: 20px;
+  color: white;
+  display: block;
+  
+}
+
+.sidebar-logo {
+  padding: 10px 15px;
+  margin-bottom: 3%;
+  width: 85%;
+
+}
+
+/* Change color on hover */
+.sidebar .sidebtn:hover {
+    background-color: var(--bs-secondary-bg-subtle);
+    border-left: 5px solid;
+    border-image: linear-gradient(135deg, #b6359c, #ef0a6a)/*Enter face theme*/ 1;
+    transition: all ease-in-out .3s;
+}
+.active {
+    background-color: var(--bs-secondary-bg-subtle);
+    border-left: 5px solid;
+    border-image: linear-gradient(135deg, #b6359c, #ef0a6a)/*Enter face theme*/ 1;
+}
+
+/* Main content */
+.content {
+  margin-left: 250px;
+  padding: 20px;
+  transition: margin-left 0.3s ease; /* Smooth transition for margin-left */
+}
+.nav-header {
+  background-color:#343a40 ;
+  
+}
+
+/* logout button */
+.logout-btn {
+  position: absolute;
+  bottom: 2%;
+  width: 55%;
+  margin-left: 35%;
+
+}
+
+.sittings-btn {
+  position: absolute;
+  bottom: 2%;
+  width: 25%;
+  margin-left: 5%;
+}
+
+.login-body {
+  padding: 2%;
+}
+[data-bs-theme=dark] .login-body {
+  background-color: var(--bs-dark-bg-subtle);
+}
+
+.login-container {
+  border-radius: 30px;
+  margin: auto;
+  width: 60%;
+  padding: 5%;
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 5%;
+  margin-bottom: 1%;
+}
+
+.login-body a {
+  margin-left: 48%;
+  margin-right: 52%;
+}
+
+.login-image {
+  width: 20%;
+  margin-top: 3%;
+  margin-left: 50%;
+
+}
+table{
+  margin-left: 17%;
+}
+.dashboard-panel{
+  width: 90%;
+  height: 20%;
+}
+.btn-primary{
+  background: linear-gradient(135deg, #b6359c, #ef0a6a);/*Enter face theme*/
+  border-color: transparent ;
+}
+/* Change color on hover */
+.btn-primary:hover {
+   background: linear-gradient(135deg, #b6359c, #b6359c);
+  border-color: transparent ;
+}
+
