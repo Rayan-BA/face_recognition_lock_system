@@ -1,5 +1,6 @@
 import torch_SVC
 import torchEmbedder
+import lbp_antispoof
 import utils
 
 # TODO:
@@ -17,7 +18,7 @@ def face_recognition():
             Press any other key to exit.""")
         op = input(" Your selection: ")
         match op:
-            case "1": utils.collect_samples("./dataset", "face_rec")
+            case "1": utils.collect_samples_onpress("./dataset", "face_rec")
             case "2": torchEmbedder.create_embeddings("./dataset", "./models/torch_embeddings.npz", skip_existing_labels=False)
             case "3": torch_SVC.train("./models/torch_embeddings.npz", "./models/torch_svc.joblib")
             case "4": torch_SVC.recognize("./models/torch_embeddings.npz", "./models/torch_svc.joblib")
@@ -28,17 +29,15 @@ def anti_spoof():
         print(" [INFO] Anti-spoof")
         print(""" [SELECT]
             1) Collect faces
-            2) Create New Face Embeddings
-            3) Train SVC Model
-            4) Recognize Faces
+            2) Train Model
+            3) Recognize Faces
             
             Press any other key to exit.""")
         op = input(" Your selection: ")
         match op:
-            case "1": utils.collect_samples("./antispoof-dataset", "anti-spoof", 50)
-            case "2": torchEmbedder.create_embeddings("./antispoof-dataset", "./models/anti-spoof_torch_embeddings.npz", skip_existing_labels=False)
-            case "3": torch_SVC.train("./models/anti-spoof_torch_embeddings.npz", "./models/anti-spoof_torch_svc.joblib")
-            case "4": torch_SVC.recognize("./models/anti-spoof_torch_embeddings.npz", "./models/anti-spoof_torch_svc.joblib")
+            case "1": utils.collect_samples_onpress("./antispoof-dataset", "anti-spoof")
+            case "2": lbp_antispoof.train()
+            case "3": lbp_antispoof.recognize()
             case _: break
 
 def main():
