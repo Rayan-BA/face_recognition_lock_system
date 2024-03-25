@@ -11,31 +11,26 @@ import keyboard
 face_cascade = cv.CascadeClassifier("haarcascade_frontalface_default.xml")
 # dataset_path = os.getenv("dataset_path")
 
-# def _load_images(sub_dir):
-#     faces = []
-#     for img in tqdm(os.listdir(sub_dir)):
-#         path = sub_dir + "/" + img
-#         face = cv.imread(path)
-#         if face is None: continue
-#         # face = cv.cvtColor(face, cv.COLOR_BGR2RGB)
-#         # face = extractFace(face)
-#         if face is None: continue
-#         # FaceNet requires 160x160
-#         face = cv.resize(face, (160, 160))
-#         faces.append(face)
-#     return faces
+def _load_images(sub_dir):
+    faces = []
+    for img in tqdm(os.listdir(sub_dir)):
+        path = sub_dir + "/" + img
+        face = cv.imread(path, 0) # 0 for grayscale
+        face = cv.resize(face, (160, 160))
+        faces.append(face)
+    return faces
 
-# def load_classes(dir: str):
-#     print("[INFO] Loading classes...")
-#     x, y = [], []
-#     for sub_dir in os.listdir(dir):
-#         path = dir + "/" + sub_dir
-#         faces = _load_images(path)
-#         labels = [sub_dir for _ in range(len(faces))]
-#         x.extend(faces)
-#         y.extend(labels)
-#     print("[INFO] Loading done.")
-#     return np.asarray(x), np.asarray(y)
+def load_data(dir: str):
+    print(" [INFO] Loading classes...")
+    x, y = [], []
+    for sub_dir in os.listdir(dir):
+        path = dir + "/" + sub_dir
+        faces = _load_images(path)
+        labels = [sub_dir for _ in range(len(faces))]
+        x.extend(faces)
+        y.extend(labels)
+    print(" [INFO] Loading done.")
+    return np.asarray(x), np.asarray(y)
 
 def _create_dir(dir_name):
     if not os.path.isdir(dir_name):
