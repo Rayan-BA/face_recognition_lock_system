@@ -12,8 +12,8 @@ from multiprocessing import cpu_count
 torch.set_num_threads(round(cpu_count() * 0.8))
 
 class FaceEmbeddingGenerator:
-    def __init__(self, dataset_path="./dataset"):
-        self.dataset_path = dataset_path
+    def __init__(self, dataset="./dataset"):
+        self.dataset = dataset
         self.device = "cpu"
         self.mtcnn = MTCNN(
             image_size=160, margin=0, min_face_size=20,
@@ -24,7 +24,7 @@ class FaceEmbeddingGenerator:
     
     def create_embeddings(self, skip_existing_labels=True):
         print("[INFO] Creating new embeddings...")
-        dataset = datasets.ImageFolder(self.dataset_path)
+        dataset = datasets.ImageFolder(self.dataset)
         dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
         loader = DataLoader(dataset, collate_fn=lambda x: x[0])
 
