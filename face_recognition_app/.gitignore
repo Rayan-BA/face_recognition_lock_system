@@ -3,8 +3,12 @@ models/
 assets/
 antispoof-dataset/
 __pycache__/
+Lib/
+Scripts/
+share/
+Include/
 *.yml
-*.txt
 *.npz
 *.pkl
 *.env
+*.cfg
