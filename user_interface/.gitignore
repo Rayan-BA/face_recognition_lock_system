@@ -1,4 +1,4 @@
-instance/
 __pycache__/
 env/
 *.txt
+*.sqlite3

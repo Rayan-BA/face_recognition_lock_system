@@ -1,14 +1,11 @@
 {% extends 'index.html' %}
-
-
 {% block head %}{% endblock %}
-
+{% block title %}<h2>Dashboard</h2>{% endblock %}
 {% block body %}
-<h2>Dashboard</h2>
 <div class="card mb-3 shadow">
   <img src="static\images\Enter_face_panel.png" class="card-img-top object-fit-contain" alt="Enter_face_panel.png">
   <div class="card-body">
-    <h5 class="card-title">Welcome {{username}}</h5>
+    <h5 class="card-title">Welcome</h5>
     <p class="card-text">Enter Face revolutionizes the realm of security with its innovative approach to face
       recognition technology.</p>
     <p class="card-text"><small><a href="https://en.wikipedia.org/wiki/Facial_recognition_system"
@@ -43,6 +40,4 @@
       </div>
     </div>
   </div>
-
-
   {% endblock %}

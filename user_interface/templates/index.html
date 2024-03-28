@@ -15,11 +15,11 @@
   {% block head %}{% endblock %}
 </head>
 
-<body class="bg-body-tertiary">
+<body class="bg-body-tertiary d-flex align-items-stretch">
 
 
   <!-- Sidebar -->
-  <div class="sidebar bg-body shadow">
+  <div class="bg-body shadow sidebar">
     <image class="card-img-top sidebar-logo"
       src="{% if session['theme'] == 'dark' %} static\images\Enter_Face_no_wallpaper.png {% else %} static\images\Enter_Face_Dark.png {% endif %}">
     </image>
@@ -31,10 +31,12 @@
       href="{{url_for('history')}}"><i class="bi bi-clock-history"></i> History</a>
     <a class="sidebtn text-body {% if request.endpoint == 'newUser' %}active{% endif %}"
       href="{{url_for('newUser')}}"><i class="bi bi-person-add"></i> New user</a>
-    <button class="logout-btn btn btn-outline-danger" data-toggle="modal" data-target=".bs-example-modal-sm"><i
-        class="bi bi-box-arrow-right"></i> Logout</button>
-    <button class="sittings-btn btn btn-outline-secondary" data-toggle="modal" data-target=".settings"><i
+    <div class="d-flex bot-buttons">
+      <button class="sittings-btn btn btn-outline-secondary" data-toggle="modal" data-target=".settings"><i
         class="bi bi-gear"></i></button>
+      <button class="logout-btn btn btn-outline-danger" data-toggle="modal" data-target=".bs-example-modal-sm"><i
+          class="bi bi-box-arrow-right"></i> Logout</button>
+    </div>
   </div>
 
   <!-- logout modal -->
@@ -59,27 +61,15 @@
         </div>
         <div class="modal-body"><i class="fa fa-question-circle"></i>
           <h6>Update acount info: </h6>
-          <form action="{{url_for('updateAcount')}}" method="post">
-            <input type="text" class="form-control shadow-sm" id="inputEmail3" name="username" placeholder="username"
-              required>
-            <br>
+          <form action="{{url_for('updateSettings')}}" method="post">
             <input type="password" class="form-control shadow-sm " id="inputPassword3" name="password"
-              placeholder="password" required>
+              placeholder="new password">
             <br>
-            <h6>theme: </h6>
-            <div class="dropdown">
-              <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                choose theme
-              </button>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="{{ url_for('set_theme', settheme='light') }}"><i
-                      class="bi bi-brightness-high"></i> light</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('set_theme', settheme='dark') }}"><i
-                      class="bi bi-moon"></i> dark</a></li>
-              </ul>
-            </div>
-
+            <h6>Themes:</h6>
+            <select name="theme" class="form-select shadow-sm">
+              <option value="light"><i class="bi bi-brightness-high"></i> light</option>
+              <option value="dark"><i class="bi bi-moon"></i> dark</option>
+            </select>
         </div>
 
         <div class="modal-footer">
@@ -89,41 +79,40 @@
       </div>
     </div>
   </div>
-
-
-
-
-  <!-- flash messeges -->
-  <div class="content">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    {% for category, msg in messages %}
-    {% if category == 'error' %}
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      <i class="bi bi-exclamation-triangle"></i> {{msg}}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% elif category == 'info' %}
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-      <i class="bi bi-info-circle"></i> {{msg}}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% else %}
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <i class="bi bi-check-circle"></i> {{msg}}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endif %}
-    {% endfor %}
-    {% endif %}
-    {% endwith %}
     <!-- Page content -->
+  <div class="container-fluid p-3 content">
+
+    {% block title %}{% endblock %}
+    <div class="container-title ">
+      <!-- flash messeges -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      {% for category, msg in messages %}
+      {% if category == 'error' %}
+      <div class="alert alert-danger alert-dismissible fade show flash-messages" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> {{msg}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% elif category == 'info' %}
+      <div class="alert alert-info alert-dismissible fade show flash-messages" role="alert">
+        <i class="bi bi-info-circle"></i> {{msg}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% else %}
+      <div class="alert alert-success alert-dismissible fade show flash-messages" role="alert">
+        <i class="bi bi-check-circle"></i> {{msg}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+      {% endwith %}
+    </div>
     {% block body %}{% endblock %}
   </div>
 
   <!-- Bootstrap JS -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 
