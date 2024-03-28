@@ -7,6 +7,7 @@ class AccountForm(Form):
         validators.Regexp('^[a-zA-Z0-9!@#$%^&*_+-=]+$', message="Password must contain only letters,and common special characters.")
     ])
     submit = SubmitField('Submit')
+
 class UserForm(Form):
     username = StringField('Username', [
         validators.Length(min=3, max=32),

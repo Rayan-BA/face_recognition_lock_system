@@ -1,55 +1,21 @@
 #graduatioation project: Enter Face
 #semester 452
 from flask import Flask, render_template, url_for, request, redirect,session,send_file,Response,flash
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import timedelta
 from io import BytesIO
 import cv2
 from forms import UserForm, AccountForm
-import bcrypt
 from bcrypt import checkpw
+from dotenv import load_dotenv
+from os import getenv
+from db import *
 
-
+load_dotenv()
 app = Flask(__name__)
 camera=cv2.VideoCapture(0)
-app.secret_key = "graduate"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.permanent_session_lifetime = timedelta(hours=1) #keep session for one day
 
 ############################(DATABASE CODE)####################################
-db = SQLAlchemy(app)
-class users(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32))
-    image = db.Column(db.LargeBinary)
-    created_at = db.Column(db.DateTime, default=datetime.now)
 
-
-    def __init__(self, name, image):
-        self.name = name
-        self.image = image
-
-class account(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    password_hash = db.Column(db.String(128), nullable=False)
-
-    def __init__(self, password):
-        self.set_password(password)# use set_password to hash the password enterd by the user
-
-    def set_password(self, password):
-        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-    def check_password(self, password):
-        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
-class entries(db.Model):
-    entrie_number = db.Column(db.Integer, primary_key=True)
-    time = db.Column(db.DateTime, default=datetime.now)
-    accepted= db.Column(db.Boolean, default=True)
-    user_id = db.Column( db.Integer, db.ForeignKey('users.user_id'))
-
-    def __init__(self, user_id):
-        self.user_id = user_id
 
 ############################(CAMERA CODE)####################################
 
@@ -63,7 +29,10 @@ def generate_frames():
             frame=buffer.tobytes()#convert buffer to frames
         yield(b' -- frame\r\n'
                     b'Content-Type: image/jpg\r\n\r\n' + frame + b'\r\n')#we use yield instade of return becuse return will end the loop
+    camera.release()
+
 ############################(APP CODE)####################################
+
 @app.route("/")
 def index():
     return redirect(url_for("login"))  # Go to login by default
@@ -96,7 +65,6 @@ def login():
     else:
         return render_template("login.html")
 
-    
 @app.route("/register", methods=["POST","GET"])
 def register():
     found_account =  account.query.all()
@@ -236,9 +204,13 @@ def updateSettings():
 def setTheme(set_theme):
     session['theme'] = set_theme 
     return redirect(request.referrer)
-    
-        
+
 if __name__ == "__main__":
+    app.secret_key = getenv('app_secret_key')
+    app.config['SQLALCHEMY_DATABASE_URI'] = getenv('SQLALCHEMY_DATABASE_URI')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.permanent_session_lifetime = timedelta(hours=1) #keep session for one hour
     with app.app_context():
+        db.init_app(app)
         db.create_all()
     app.run(debug=True)
