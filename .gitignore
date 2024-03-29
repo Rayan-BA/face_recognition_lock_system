@@ -1,9 +1,10 @@
+__pycache__/
+venv/
+instance/
 dataset/
 models/
 assets/
 antispoof-dataset/
-__pycache__/
-venv/
 *.yml
 *.npz
 *.pkl
