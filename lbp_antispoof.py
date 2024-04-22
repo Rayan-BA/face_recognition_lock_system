@@ -109,3 +109,6 @@ def evaluate_model():
     print(f"Precision: {np.max(precision_list):.2f} ({avg_precision:.2f} ± {np.std(precision_list):.2f})")
     print(f"Recall: {np.max(recall_list):.2f} ({avg_recall:.2f} ± {np.std(recall_list):.2f})")
     print(f"F1 Score: {np.max(f1_list):.2f} ({avg_f1:.2f} ± {np.std(f1_list):.2f})")
+
+if __name__ == "__main__":
+    LBPHSpoofDetector().recognize()

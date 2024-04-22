@@ -5,7 +5,5 @@ dataset/
 models/
 assets/
 antispoof-dataset/
-*.yml
-*.npz
-*.pkl
 *.env
+*.log

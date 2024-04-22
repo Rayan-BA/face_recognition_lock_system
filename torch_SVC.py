@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import cv2 as cv
 import numpy as np
 
-class SVC:
+class mySVC:
     def __init__(self) -> None:
         self.face_cascade = cv.CascadeClassifier("haarcascade_frontalface_default.xml")
         self.label_encoder = LabelEncoder()
@@ -58,3 +58,7 @@ class SVC:
                 break
         video_capture.release()
         cv.destroyWindow("Recognizer")
+
+if __name__ == "__main__":
+    model = mySVC()
+    model.recognize()
