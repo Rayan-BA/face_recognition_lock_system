@@ -5,22 +5,107 @@
 {% block body %}
 <form action="{{url_for('newUser')}}" method="post" enctype="multipart/form-data">
     <div class="mb-3">
-        <label for="exampleInputEmail1" class="form-label">User Name</label>
+        <label for="exampleInputEmail1" class="form-label">User Name:</label>
         <input type="text" class="form-control shadow-sm" name="username">
     </div>
 
-    <div>
-        <img src="{{ url_for('video') }}" class="rounded shadow-sm" width="30%" name="image">
+    <!-- Toggle switch -->
+    <label>Enable Webcam </label>
+    <label class="switch">
+        <input id="vid_toggle" onchange="toggleVideo(this)" type="checkbox">
+        <span class="slider round"></span>
+    </label>
+
+    <!-- Video disabled placeholder -->
+    <div id="vid_disabled" class="rounded-sm">
+        <img src="static\images\webcam_disabled.jpg" width="640" height="480">
     </div>
 
-    <p>OR you can upload</p>
+    <!-- Video feed -->
+    <div class="vid-captures rounded-sm" id="vid-captures" style="display: none;">
+        <video id="vid_feed"></video>
+        <button class="btn btn-primary" id="capture-btn" onclick="capture(event)">Capture</button>
+    </div>
+
+    <!-- Image capture -->
+    <canvas id="canvas"></canvas>
+    <div class="output">
+        <img id="captured-img">
+    </div>
+
+    <!-- <p>OR you can upload:</p>
 
     <div class="input-group mb-3">
         <input type="file" class="form-control shadow-sm" id="inputGroupFile02" name="file" required>
         <label class="input-group-text" for="inputGroupFile02">Upload</label>
     </div>
 
-    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add User</button>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add User</button> -->
 
 </form>
+<script>
+
+    let video = document.getElementById("vid_feed");
+    // let canvas = document.getElementById("canvas");
+    // let capture = document.getElementById("captured-img");
+    // let captureBtn = document.getElementById("capture-btn");
+    // const width = 640;
+    // const height = null;
+    // const streaming = false;
+
+    // video.addEventListener(
+    //     "canplay",
+    //     (ev) => {
+    //         if (!streaming) {
+    //             height = (video.videoHeight / video.videoWidth) * width;
+
+    //             video.setAttribute("width", width);
+    //             video.setAttribute("height", height);
+    //             canvas.setAttribute("width", width);
+    //             canvas.setAttribute("height", height);
+    //             streaming = true;
+    //         }
+    //     },
+    //     false,
+    // );
+
+    // captureBtn.addEventListener(
+    //     "click",
+    //     (ev) => {
+    //         takepicture();
+    //         ev.preventDefault();
+    //     },
+    //     false,
+    // );
+
+    function toggleVideo(e) {
+        if (e.checked) {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function (stream) {
+                    video.srcObject = stream
+                    video.play();
+                })
+                .catch(function (err) {
+                    console.log("An error occurred! " + err);
+                })
+            document.getElementById("vid_disabled").style.display = "none";
+            document.getElementById("vid-captures").style.display = "block";
+        } else {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function (stream) {
+                    // video.srcObject = stream;
+                    stream.getTracks().forEach(function (track) {
+                        track.stop();
+                    })
+                })
+                .catch(function (err) {
+                    console.log("An error occurred! " + err);
+                });
+            video.srcObject = null;
+            document.getElementById("vid-captures").style.display = "none";
+            document.getElementById("vid_disabled").style.display = "block";
+        }
+    }
+
+</script>
 {% endblock %}
