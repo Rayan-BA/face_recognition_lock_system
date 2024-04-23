@@ -3,34 +3,43 @@
 {% block head %}{% endblock %}
 {% block title %}<h2>New User</h2>{% endblock %}
 {% block body %}
-<form action="{{url_for('newUser')}}" method="post" enctype="multipart/form-data">
+<form id="form" enctype="multipart/form-data" method="post">
     <div class="mb-3">
         <label for="exampleInputEmail1" class="form-label">User Name:</label>
-        <input type="text" class="form-control shadow-sm" name="username">
+        <input type="text" class="form-control shadow-sm" name="username" id="username">
     </div>
 
     <!-- Toggle switch -->
-    <label>Enable Webcam </label>
-    <label class="switch">
-        <input id="vid_toggle" onchange="toggleVideo(this)" type="checkbox">
-        <span class="slider round"></span>
-    </label>
-
-    <!-- Video disabled placeholder -->
-    <div id="vid_disabled" class="rounded-sm">
-        <img src="static\images\webcam_disabled.jpg" width="640" height="480">
+    <div class="switch-container mb-3">
+        <label>Enable Webcam </label>
+        <label class="switch">
+            <input id="vid_toggle" onchange="toggleVideo(this)" type="checkbox">
+            <span class="slider round"></span>
+        </label>
     </div>
 
-    <!-- Video feed -->
-    <div class="vid-captures rounded-sm" id="vid-captures" style="display: none;">
-        <video id="vid_feed"></video>
-        <button class="btn btn-primary" id="capture-btn" onclick="capture(event)">Capture</button>
-    </div>
-
-    <!-- Image capture -->
-    <canvas id="canvas"></canvas>
-    <div class="output">
-        <img id="captured-img">
+    <div class="row">
+        <div class="col p-0 border border-green">
+            <!-- Video disabled placeholder -->
+            <div id="vid_disabled">
+                <img class="rounded-sm" src="static\images\webcam_disabled.jpg" width="640" height="480">
+            </div>
+            <!-- Video feed -->
+            <div class="vid-container" id="vid-container" style="display: none;">
+                <video id="vid_feed" class="rounded-sm"></video>
+            </div>
+            <button class="btn btn-secondry" id="capture-btn" type="button" disabled>Capture</button>
+            <button class="btn btn-primary" id="submit-btn" type="submit">Submit</button>
+        </div>
+        <div class="col border border-red">
+            <!-- Image capture -->
+            <div class="">
+                <canvas id="canvas" style="display: none;"></canvas>
+                <div class="" id="outputs">
+                    <img id="captured-img">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- <p>OR you can upload:</p>
@@ -44,39 +53,65 @@
 
 </form>
 <script>
-
+    let form = document.getElementById("form");
+    let submitBtn = document.getElementById("submit-btn");
     let video = document.getElementById("vid_feed");
-    // let canvas = document.getElementById("canvas");
-    // let capture = document.getElementById("captured-img");
-    // let captureBtn = document.getElementById("capture-btn");
-    // const width = 640;
-    // const height = null;
-    // const streaming = false;
+    let canvas = document.getElementById("canvas");
+    let capture = document.getElementById("captured-img");
+    let outputs = document.getElementById("outputs");
+    let captureBtn = document.getElementById("capture-btn");
+    const width = 640;
+    const height = 480;
+    const streaming = false;
 
-    // video.addEventListener(
-    //     "canplay",
-    //     (ev) => {
-    //         if (!streaming) {
-    //             height = (video.videoHeight / video.videoWidth) * width;
+    let images = [];
 
-    //             video.setAttribute("width", width);
-    //             video.setAttribute("height", height);
-    //             canvas.setAttribute("width", width);
-    //             canvas.setAttribute("height", height);
-    //             streaming = true;
-    //         }
-    //     },
-    //     false,
-    // );
+    video.setAttribute("width", width);
+    video.setAttribute("height", height);
+    canvas.setAttribute("width", width);
+    canvas.setAttribute("height", height);
 
-    // captureBtn.addEventListener(
-    //     "click",
-    //     (ev) => {
-    //         takepicture();
-    //         ev.preventDefault();
-    //     },
-    //     false,
-    // );
+    let timeout;
+    captureBtn.addEventListener(
+        "mousedown",
+        (e) => {
+            console.log(images);
+            mouseIsDown(e);
+            timeout = setInterval(() => {
+                mouseIsDown(e);
+            }, 100);
+        },
+    );
+
+    function mouseIsDown(e) {
+        takepicture();
+    }
+
+    captureBtn.addEventListener(
+        "mouseup",
+        (e) => {
+            clearInterval(timeout);
+        },
+    );
+
+    captureBtn.addEventListener("click", e => e.preventDefault());
+    submitBtn.addEventListener("click", (e) => {
+        let formData = new FormData();
+        formData.append("username", document.getElementById("username").value);
+        for (let i = 0; i < images.length; i++) {
+            formData.append(`img[${i}]`, images[i])
+        }
+        console.log(formData);
+        try {
+            let response = fetch("{{url_for('newUser')}}", {
+                method: "post",
+                body: formData,
+            }).then(res => console.log(res.text()));
+        } catch (e) {
+            alert(e);
+        }
+        e.preventDefault();
+    });
 
     function toggleVideo(e) {
         if (e.checked) {
@@ -89,11 +124,11 @@
                     console.log("An error occurred! " + err);
                 })
             document.getElementById("vid_disabled").style.display = "none";
-            document.getElementById("vid-captures").style.display = "block";
+            document.getElementById("vid-container").style.display = "block";
+            captureBtn.removeAttribute("disabled");
         } else {
             navigator.mediaDevices.getUserMedia({ video: true, audio: false })
                 .then(function (stream) {
-                    // video.srcObject = stream;
                     stream.getTracks().forEach(function (track) {
                         track.stop();
                     })
@@ -102,8 +137,38 @@
                     console.log("An error occurred! " + err);
                 });
             video.srcObject = null;
-            document.getElementById("vid-captures").style.display = "none";
+            document.getElementById("vid-container").style.display = "none";
             document.getElementById("vid_disabled").style.display = "block";
+            captureBtn.setAttribute("disabled", true);
+        }
+    }
+
+    function clearphoto() {
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#AAA";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        const data = canvas.toDataURL("image/jpeg");
+        capture.setAttribute("src", data);
+    }
+
+    function takepicture() {
+        const context = canvas.getContext("2d");
+        const scaling = 4
+        if (width && height) {
+            canvas.width = width / scaling;
+            canvas.height = height / scaling;
+            context.drawImage(video, 0, 0, width / scaling, height / scaling);
+
+            let data = canvas.toDataURL("image/jpeg");
+            capture = document.createElement("img");
+            capture.setAttribute("src", data);
+            capture.setAttribute("name", `img${images.length}`);
+            outputs.appendChild(capture);
+            data = data.split(";base64,")[1];
+            images.push(data);
+        } else {
+            clearphoto();
         }
     }
 

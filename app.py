@@ -1,15 +1,19 @@
 #graduation project: Enter Face
 #semester 452
 from flask import Flask, render_template, url_for, request, redirect, session, send_file, Response, flash
+from flask_cors import CORS, cross_origin
 from datetime import timedelta
 from io import BytesIO
 from forms import UserForm, AccountForm, AccountFormUpdate
 from bcrypt import checkpw
 from db import Users, Account, Entries, db
-from camera import Camera
+import logging
 
 
 app = Flask(__name__)
+cors = CORS(app)
+# logging.getLogger('flask_cors').level = logging.DEBUG
+# app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
@@ -97,10 +101,14 @@ def history():
         return redirect(url_for("login"))
     
 @app.route("/newUser",methods=["POST","GET"])
+@cross_origin()
 def newUser():
     if "user" in session:
         if request.method == "POST":
+            for key in request.form.values():
+                print(key)
             form = UserForm(request.form)
+            exit()
             if form.validate():#to validate input
                 user = request.form["username"]
                 file = request.files["file"]
