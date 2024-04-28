@@ -107,6 +107,12 @@
   border-color: transparent;
 }
 
+.btn-secondry {
+  border-color: linear-gradient(135deg, #b6359c, #ef0a6a);
+  color: linear-gradient(135deg, #b6359c, #ef0a6a);
+  background-color: transparent;
+}
+
 /* Change color on hover */
 .btn-primary:hover {
   background: linear-gradient(135deg, #b6359c, #b6359c);
@@ -118,6 +124,27 @@
   animation-duration: 3s;
   animation-delay: 5s;
 }
+
+#vid-container {
+  position: relative;
+  width: min-content;
+}
+
+#vid_feed {
+  display: block;
+}
+
+#vid_disabled {
+  width: min-content;
+}
+
+/* #capture-btn {
+  position: absolute;
+  bottom: 0;
+  left: 270px;
+  z-index: 1;
+  margin: 1rem;
+} */
 
 /* The switch - the box around the slider */
 .switch {

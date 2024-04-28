@@ -6,19 +6,21 @@ from datetime import timedelta
 from io import BytesIO
 from forms import UserForm, AccountForm, AccountFormUpdate
 from bcrypt import checkpw
-from db import Users, Account, Entries, db
-import logging
-
+from db import Users, Account, db
+import base64
+import pathlib
+from time import sleep
+from torchEmbedder import FaceEmbeddingGenerator
+from torch_SVC import mySVC
 
 app = Flask(__name__)
 cors = CORS(app)
-# logging.getLogger('flask_cors').level = logging.DEBUG
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 app.secret_key = "graduate"
-app.permanent_session_lifetime = timedelta(hours=1) #keep session for one day
+app.permanent_session_lifetime = timedelta(hours=3) #keep session for one day
 
 @app.route("/")
 def index():
@@ -105,22 +107,35 @@ def history():
 def newUser():
     if "user" in session:
         if request.method == "POST":
-            for key in request.form.values():
-                print(key)
-            form = UserForm(request.form)
-            exit()
-            if form.validate():#to validate input
-                user = request.form["username"]
-                file = request.files["file"]
-                image= file.read()
+            values = []
+            for value in request.form.values():
+                values.append(value)
+            images = values[1:]
 
-                found_user =  Users.query.filter_by(name=user).first() 
+            form = UserForm(request.form)
+            if form.validate(): #to validate input
+                username = request.form["username"]
+                found_user =  Users.query.filter_by(name=username).first() 
                 if found_user:
                     flash("user already exists", "info")
                 else:
-                    new_user = Users(user, image)
-                    db.session.add(new_user)
-                    db.session.commit() #if user not found then add new user to data base db
+                    for i, img in enumerate(images):
+                        try:
+                            pathlib.Path(f"tmp/{username}").mkdir(parents=True, exist_ok=True)
+
+                            with open(f"tmp/{username}/{i}.jpg", "wb") as file:
+                                file.write(base64.b64decode(img))
+                        except Exception as e:
+                            print(e)
+                    
+                    FaceEmbeddingGenerator(dataset="./tmp").create_embeddings()
+                    mySVC().train()
+
+                    with open(f"tmp/{username}/0.jpg", "rb") as file:
+                        image = file.read()
+                        new_user = Users(username, image)
+                        db.session.add(new_user)
+                        db.session.commit() #if user not found then add new user to data base db
                     flash("user  have been added successfuly")
                 
                 return redirect(url_for("newUser"))

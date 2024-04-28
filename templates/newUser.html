@@ -75,7 +75,6 @@
     captureBtn.addEventListener(
         "mousedown",
         (e) => {
-            console.log(images);
             mouseIsDown(e);
             timeout = setInterval(() => {
                 mouseIsDown(e);
@@ -101,12 +100,11 @@
         for (let i = 0; i < images.length; i++) {
             formData.append(`img[${i}]`, images[i])
         }
-        console.log(formData);
         try {
             let response = fetch("{{url_for('newUser')}}", {
                 method: "post",
                 body: formData,
-            }).then(res => console.log(res.text()));
+            });
         } catch (e) {
             alert(e);
         }
@@ -154,19 +152,27 @@
 
     function takepicture() {
         const context = canvas.getContext("2d");
-        const scaling = 4
+        const save_scaling = 1 / 2;
+        const show_scaling = 1 / 4;
         if (width && height) {
-            canvas.width = width / scaling;
-            canvas.height = height / scaling;
-            context.drawImage(video, 0, 0, width / scaling, height / scaling);
+            canvas.width = width * save_scaling;
+            canvas.height = height * save_scaling;
+            context.drawImage(video, 0, 0, width * save_scaling, height * save_scaling);
 
+            // save 1/2 scaled
             let data = canvas.toDataURL("image/jpeg");
-            capture = document.createElement("img");
-            capture.setAttribute("src", data);
-            capture.setAttribute("name", `img${images.length}`);
-            outputs.appendChild(capture);
             data = data.split(";base64,")[1];
             images.push(data);
+
+            canvas.width = width * show_scaling;
+            canvas.height = height * show_scaling;
+            context.drawImage(video, 0, 0, width * show_scaling, height * show_scaling);
+
+            // show 1/4 scaled
+            data = canvas.toDataURL("image/jpeg");
+            capture = document.createElement("img");
+            capture.setAttribute("src", data);
+            outputs.appendChild(capture);
         } else {
             clearphoto();
         }
