@@ -1,11 +1,12 @@
-{% extends 'inputFrame.html'  %}
+{% extends 'inputFrame.html' %}
 
 {% block head %}{% endblock %}
-{% block title %}<h2 class="text-center login-title" >Login</h2>{% endblock %}
+{% block title %}<h2 class="text-center login-title">Login</h2>{% endblock %}
 {% block body %}
 <form action="{{url_for('login')}}" method="post">
-<input type="password" class="form-control shadow-sm " id="inputPassword3" name="password" placeholder="password" required>
-<button type="submit" class="btn btn-primary btn-lg login-btn"><i class="bi bi-box-arrow-in-right"
-    value="submit"></i> Sign in</button>
+    <input type="password" class="form-control shadow-sm " id="inputPassword3" name="password" placeholder="password"
+        autofocus required>
+    <button type="submit" class="btn btn-primary btn-lg login-btn"><i class="bi bi-box-arrow-in-right"
+            value="submit"></i> Sign in</button>
 </form>
 {% endblock %}
