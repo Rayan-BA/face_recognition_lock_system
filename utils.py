@@ -4,7 +4,6 @@ import cv2 as cv
 import numpy as np
 from uuid import uuid1
 from tqdm import tqdm
-import keyboard
 
 face_cascade = cv.CascadeClassifier("haarcascade_frontalface_default.xml")
 
@@ -119,8 +118,7 @@ def collect_samples_onpress(dataset_path, mode):
             face = frame[y:y+h, x:x+w]
             cv.rectangle(frame, (x-padding, y-padding), (x+w+padding, y+h+padding), (0,0,255), 2)
         try:
-            if keyboard.on_release("space"):
-                _save_face(face, f"{dataset_path}/{label}")
+            _save_face(face, f"{dataset_path}/{label}")
         except: pass
         cv.imshow("Webcam Capture", frame)
         cv.setWindowProperty("Webcam Capture", cv.WND_PROP_TOPMOST, 1)
