@@ -7,12 +7,13 @@ class RPi:
     def __init__(self, hostname = "raspberrypi", username = "pi") -> None:
         self.hostname = hostname
         self.username = username
+        self.known_hosts = "C:\\Users\\rbalh\\.ssh\\known_hosts"
         self.remote_working_dir = "ef-access-control"
         self.ssh = paramiko.SSHClient()
 
     def connect(self):
         try:
-            self.ssh.load_host_keys("C:\\Users\\rbalh\\.ssh\\known_hosts")
+            self.ssh.load_host_keys(self.known_hosts)
         except paramiko.ssh_exception.SSHException:
             with open("known_hosts", "w") as file:
                 file.write(f"{self.username}@{self.hostname}")
@@ -46,12 +47,16 @@ class RPi:
         if self.ssh.get_transport() is not None:
             return self.ssh.get_transport().is_active()
         else: return False
+    
+    def stat(self, file):
+        return self.sftp.stat(file)
 
 
 if __name__ == "__main__":
     s = RPi()
     s.connect()
-    s.send("models")
-    s.receive("./log.txt")
+    # s.send("models")
+    # s.receive("./log.txt")
+    print(s.stat("log.txt").st_size) # if size changes receive updated files
     s.close()
     
