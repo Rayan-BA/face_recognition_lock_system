@@ -2,16 +2,16 @@
 #semester 452
 from flask import Flask, render_template, url_for, request, redirect, session, send_file, Response, flash
 from flask_cors import CORS, cross_origin
+from flask_apscheduler import APScheduler
 from datetime import timedelta
 from io import BytesIO
 from forms import UserForm, AccountForm, AccountFormUpdate
 from bcrypt import checkpw
-from db import Users, Account, db
-import base64
-import pathlib
-from time import sleep
+from db import *
 from torchEmbedder import FaceEmbeddingGenerator
 from torch_SVC import mySVC
+import base64, pathlib, shutil, json
+from rpi import RPi
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -21,6 +21,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 app.secret_key = "graduate"
 app.permanent_session_lifetime = timedelta(hours=3) #keep session for one day
+
+scheduler = APScheduler() # run periodic RPI.stat() to check for new entrie attempts
+scheduler.api_enabled = True
+scheduler.init_app(app)
+scheduler.start()
 
 @app.route("/")
 def index():
@@ -91,7 +96,7 @@ def dashboard():
 @app.route("/registerdUsers")
 def registerdUsers():
     if "user" in session: 
-        return render_template("registerdUsers.html",values = Users.query.all())
+        return render_template("registerdUsers.html", values = Users.query.all())
     else:
         return redirect(url_for("login"))
 
@@ -128,14 +133,23 @@ def newUser():
                         except Exception as e:
                             print(e)
                     
-                    FaceEmbeddingGenerator(dataset="./tmp").create_embeddings()
-                    mySVC().train()
+                    try:
+                        FaceEmbeddingGenerator(dataset="./tmp").create_embeddings()
+                        mySVC().train()
 
-                    with open(f"tmp/{username}/0.jpg", "rb") as file:
-                        image = file.read()
-                        new_user = Users(username, image)
-                        db.session.add(new_user)
-                        db.session.commit() #if user not found then add new user to data base db
+                        ssh = RPi()
+                        ssh.connect()
+                        ssh.send("./models")
+                        ssh.close()
+                    
+                        with open(f"tmp/{username}/0.jpg", "rb") as file:
+                            image = file.read()
+                            new_user = Users(username, image)
+                            db.session.add(new_user)
+                            db.session.commit() #if user not found then add new user to data base db
+                    except Exception as e:
+                        print(e)
+                    
                     flash("user  have been added successfuly")
                 
                 return redirect(url_for("newUser"))
@@ -167,6 +181,7 @@ def deleteUser():
         user = request.form["delete"]
         user_to_delete = Users.query.filter_by(name=user).first()
         if user_to_delete:
+            shutil.rmtree(pathlib.Path(f"tmp/{user}"))
             db.session.delete(user_to_delete)
             db.session.commit()
         return redirect(url_for("registerdUsers"))
@@ -212,9 +227,45 @@ def updateSettings():
 def setTheme(set_theme):
     session['theme'] = set_theme 
     return redirect(request.referrer)
-    
+
+@scheduler.task(trigger="interval", id="entries", seconds=30, next_run_time=datetime.datetime.now())
+def updateEntries():
+    ssh = RPi()
+    ssh.connect()
+    if not ssh.is_connected():
+        print("RPI is not connected.")
+        return
+    with app.app_context():
+        current_file_size = ssh.stat("entries.json")
+        prev_file_size = EntriesControl.query.order_by(EntriesControl.file_size.desc()).first()
+        if prev_file_size != current_file_size:
+            ssh.receive()
+            with open("entries.json", "r") as file:
+                entries = json.load(file)
+                for entrie in entries:
+                    id = int(entrie["id"])
+                    try:
+                        saved_entrie = Entries.query.filter_by(entry_id=id).first()
+                    except Exception as e:
+                        print(e)
+                        saved_entrie = None
+                    if saved_entrie is not None:
+                        print("skipping")
+                        continue
+                    try:
+                        image = base64.b64decode(entrie["image"])
+                        # image = base64.b64decode(entrie["image"][2:-1])
+                    except Exception as e:
+                        print(e)
+                        continue
+                    time = datetime.datetime.strptime(entrie["time"], "%Y-%m-%d %H:%M:%S.%f%z")
+                    new_entrie = Entries(entry_id=id, name=entrie["name"], time=time, accepted=entrie["accepted"], image=image)
+                    db.session.add(new_entrie)
+                    db.session.commit()
+        
+    ssh.close()
         
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

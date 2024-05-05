@@ -31,17 +31,19 @@ class RPi:
         print("connection closed.")
     
     def send(self, local_dir):
+        print("sending...")
         try:
             for file in listdir(local_dir):
-                print(file)
                 self.sftp.put(localpath=f"{local_dir}/{file}", remotepath=file)
         except Exception as e:
             print(e)
 
-    def receive(self, local_dir):
-        # get log file at fixed time intervals?
-        # if there is a way for remote to trigger and event on local then do this
-        self.sftp.get(remotepath="log.txt", localpath=local_dir)
+    def receive(self, local_dir="./entries.json"):
+        print("receiving...")
+        try:
+            self.sftp.get(remotepath="entries.json", localpath=local_dir)
+        except Exception as e:
+            print(e)
     
     def is_connected(self):
         if self.ssh.get_transport() is not None:
@@ -49,14 +51,17 @@ class RPi:
         else: return False
     
     def stat(self, file):
-        return self.sftp.stat(file)
+        try:
+            return self.sftp.stat(file)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
     s = RPi()
     s.connect()
     # s.send("models")
-    # s.receive("./log.txt")
-    print(s.stat("log.txt").st_size) # if size changes receive updated files
+    # s.receive("./entries.json")
+    print(s.stat("entries.json").st_size) # if size changes receive updated files
     s.close()
     
