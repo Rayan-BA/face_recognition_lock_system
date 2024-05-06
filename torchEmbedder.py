@@ -1,4 +1,5 @@
 from facenet_pytorch import MTCNN, InceptionResnetV1
+# from facenet_pytorch.test import tests
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets
@@ -21,6 +22,10 @@ class FaceEmbeddingGenerator:
         self.resnet = InceptionResnetV1(pretrained="vggface2", device=self.device).eval()
         self.skip_existing_labels = skip_existing_labels
         self.batch_size = batch_size
+        self.finished = False
+    
+    def train_test(self):
+        pass
     
     def create_embeddings(self):
         print("[INFO] Creating new embeddings...")
@@ -53,6 +58,8 @@ class FaceEmbeddingGenerator:
                 np.savez("./models/torch_embeddings.npz", combined_embeddings, combined_labels)
             else:
                 np.savez("./models/torch_embeddings.npz", new_embeddings, new_labels)
+            
+        self.finished = True
 
         print("[INFO] Embedding done.")
 

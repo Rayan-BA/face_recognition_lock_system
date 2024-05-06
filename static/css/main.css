@@ -1,3 +1,9 @@
+html,
+body {
+  padding: 0px;
+  margin: 0px;
+}
+
 /* Set the width of the sidebar */
 .sidebar {
   width: 250px;
@@ -29,18 +35,16 @@
 .sidebar .sidebtn:hover {
   background-color: var(--bs-secondary-bg-subtle);
   border-left: 5px solid;
-  border-image: linear-gradient(135deg, #b6359c, #ef0a6a)
-    /*Enter face theme*/
-    1;
+  /*Enter face theme*/
+  border-image: linear-gradient(135deg, #b6359c, #ef0a6a) 1;
   transition: all ease-in-out .3s;
 }
 
 .active {
   background-color: var(--bs-secondary-bg-subtle);
   border-left: 5px solid;
-  border-image: linear-gradient(135deg, #b6359c, #ef0a6a)
-    /*Enter face theme*/
-    1;
+  /*Enter face theme*/
+  border-image: linear-gradient(135deg, #b6359c, #ef0a6a) 1;
 }
 
 .bot-buttons {
@@ -48,6 +52,13 @@
   bottom: 2.5%;
   padding: 0 10%;
   width: 100%;
+  justify-content: center;
+}
+
+.bot-btn {
+  width: 45px;
+  height: 45px;
+  line-height: 1;
 }
 
 .content {

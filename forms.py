@@ -1,4 +1,4 @@
-from wtforms import Form, StringField, PasswordField, validators, SubmitField, FieldList, MultipleFileField
+from wtforms import Form, StringField, PasswordField, validators, SubmitField
 
 class AccountForm(Form):
     password = PasswordField('Password', [
@@ -27,5 +27,4 @@ class UserForm(Form):
         validators.InputRequired(),
         validators.Regexp('^[a-zA-Z]+( [a-zA-Z]+)*$', message="Username must contain only letters and no empty spaces.")
     ])
-    # images = FieldList(StringField("Image"))
     submit = SubmitField('Submit')

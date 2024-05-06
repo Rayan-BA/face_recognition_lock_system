@@ -31,12 +31,29 @@
       href="{{url_for('history')}}"><i class="bi bi-clock-history"></i> History</a>
     <a class="sidebtn text-body {% if request.endpoint == 'newUser' %}active{% endif %}"
       href="{{url_for('newUser')}}"><i class="bi bi-person-add"></i> New user</a>
-    <div class="d-flex bot-buttons">
-      <button class="sittings-btn btn btn-outline-secondary" data-toggle="modal" data-target=".settings"><i
-          class="bi bi-gear"></i></button>
-      <button class="logout-btn btn btn-outline-danger" data-toggle="modal" data-target=".bs-example-modal-sm"><i
-          class="bi bi-box-arrow-right"></i> Logout</button>
+
+    <div class="bot-buttons d-flex">
+      {% if session['theme'] == 'light' %}
+      <a type="button" class="btn btn-primary bot-btn m-2 d-flex justify-content-center align-items-center"
+        href="{{ url_for('setTheme', set_theme='dark') }}" role="button" title="siwtch to dark theme"><i
+          class="bi bi-moon"></i></a>
+      {% elif session['theme'] == 'dark' %}
+      <a type="button" class="btn btn-primary bot-btn m-2 d-flex justify-content-center align-items-center"
+        href="{{ url_for('setTheme', set_theme='light') }}" role="button" title="siwtch to light theme"><i
+          class="bi bi-brightness-high"></i></a>
+      {% else %}
+      <a type="button" class="btn btn-primary bot-btn m-2 d-flex justify-content-center align-items-center"
+        href="{{ url_for('setTheme', set_theme='dark') }}" role="button" title="siwtch to dark theme"><i
+          class="bi bi-moon"></i></a>
+      {% endif %}
+      <button type="button" class="btn btn-primary bot-btn m-2" data-toggle="modal" data-target=".settings"
+        title="settings"><i class="bi bi-gear"></i></button>
+      <button type="button" class="btn btn-primary bot-btn m-2" data-toggle="modal" data-target=".bs-example-modal-sm"
+        title="logout"><i class="bi bi-box-arrow-right"></i></button>
+
+
     </div>
+
   </div>
 
   <!-- logout modal -->
@@ -62,14 +79,11 @@
         <div class="modal-body"><i class="fa fa-question-circle"></i>
           <h6>Update acount info: </h6>
           <form action="{{url_for('updateSettings')}}" method="post">
-            <input type="password" class="form-control shadow-sm " id="inputPassword3" name="password"
-              placeholder="new password">
+            <input type="password" class="form-control shadow-sm " id="inputPassword3" name="current_password"
+              placeholder="current password">
             <br>
-            <h6>Themes:</h6>
-            <select name="theme" class="form-select shadow-sm">
-              <option value="light"><i class="bi bi-brightness-high"></i> light</option>
-              <option value="dark"><i class="bi bi-moon"></i> dark</option>
-            </select>
+            <input type="password" class="form-control shadow-sm " id="inputPassword3" name="new_password"
+              placeholder="new password">
         </div>
 
         <div class="modal-footer">

@@ -1,5 +1,6 @@
 import cv2 as cv
-from utils import load_data
+import numpy as np
+from os import listdir
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
@@ -12,13 +13,34 @@ class LBPHSpoofDetector:
     def train(self):
         print ("\n [INFO] Training faces. It will take a few seconds. Please wait...")
         recognizer = self.recognizer
-        x, y = load_data("./antispoof-dataset")
+        x, y = self.load_data("./antispoof-dataset")
         encoder = self.label_encoder
         encoder.fit(y)
         y = encoder.transform(y)
         X_train, X_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=42)
         recognizer.train(X_train, y_train)
         recognizer.write("./models/lbp-antispoof.yml")
+    
+    def _load_images(self, sub_dir):
+        faces = []
+        for img in listdir(sub_dir):
+            path = sub_dir + "/" + img
+            face = cv.imread(path, 0) # 0 for grayscale
+            face = cv.resize(face, (160, 160))
+            faces.append(face)
+        return faces
+
+    def load_data(self, dir):
+        print(" [INFO] Loading classes...")
+        x, y = [], []
+        for sub_dir in listdir(dir):
+            path = dir + "/" + sub_dir
+            faces = self._load_images(path)
+            labels = [sub_dir for _ in range(len(faces))]
+            x.extend(faces)
+            y.extend(labels)
+        print(" [INFO] Loading done.")
+        return np.asarray(x), np.asarray(y)
 
     def recognize(self):
         print(" [INFO] Recognizing faces...")
@@ -45,10 +67,9 @@ class LBPHSpoofDetector:
 
 def evaluate_model():
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-    import numpy as np
     from tqdm import tqdm
 
-    x, y = load_data("./antispoof-dataset")
+    x, y = LBPHSpoofDetector().load_data("./antispoof-dataset")
     
     encoder = LabelEncoder()
     encoder.fit(y)

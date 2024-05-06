@@ -13,6 +13,7 @@ class mySVC:
         self.label_encoder = LabelEncoder()
         self.model = SVC(kernel="linear", probability=True)
         self.resnet = InceptionResnetV1(pretrained="vggface2").eval()
+        self.finished = False
 
     def train(self):
         print("[INFO] Training SVC model...")
@@ -26,6 +27,7 @@ class mySVC:
         model.fit(x_train, y_train)
         with open("./models/torch_svc.joblib", "wb") as f:
             joblib.dump(model, f)
+        self.finished = True
         print("[INFO] Training done.")
 
     def recognize(self):

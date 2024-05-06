@@ -11,10 +11,29 @@
             <div class="card-body">
                 <h5 class="card-title">{{item.name}}</h5>
                 <p class="card-text"></p>
-                <form action="{{url_for('deleteUser')}}" method="post">
-                    <button type="submit" class="btn btn-danger btn-sm" name="delete" value="{{item.name}}">Delete
-                        user</button>
-                </form>
+                <button type="button" class="btn btn-danger btn-sm delete-btn" data-toggle="modal"
+                    data-target="#deleteModal{{ item.user_id }}">delete user</button>
+                <!-- delete modal -->
+                <div class="modal delete" id="deleteModal{{ item.user_id }}" tabindex="-1" role="dialog"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4>delete user <i class="fa fa-lock"></i></h4>
+                            </div>
+                            <div class="modal-body"><i class="fa fa-question-circle"></i> Are you sure you want to
+                                delete
+                                {{item.name}}?</div>
+                            <div class="modal-footer">
+                                <form action="{{url_for('deleteUser')}}" method="post">
+                                    <input type="hidden" name="user_id" value="{{ item.user_id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" name="delete"
+                                        value="{{item.name}}">delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="card-footer">
                 <small class="text-body-secondary">Created at {{ item.created_at.strftime("%b %d %Y ") }}</small>

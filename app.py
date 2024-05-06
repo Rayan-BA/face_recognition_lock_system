@@ -89,7 +89,7 @@ def register():
 @app.route("/dashboard")
 def dashboard():
     if "user" in session: 
-        return render_template("dashboard.html", num_of_users = Users.query.count()) # num_of_entries = Entries.query.count(), num_of_alerts = Entries.query.filter_by(accepted=False).count()
+        return render_template("dashboard.html", num_of_users = Users.query.count(), num_of_entries = Entries.query.count(), num_of_alerts = Entries.query.filter_by(accepted=False).count())
     else:
         return redirect(url_for("login"))
 
@@ -103,10 +103,10 @@ def registerdUsers():
 @app.route("/history")
 def history():
     if "user" in session:
-        return render_template("history.html",values = [None]) # values = Entries.query.all()
+        return render_template("history.html", values = Entries.query.order_by(Entries.time.desc()).all())
     else:
         return redirect(url_for("login"))
-    
+
 @app.route("/newUser",methods=["POST","GET"])
 @cross_origin()
 def newUser():
@@ -163,10 +163,6 @@ def newUser():
             return render_template("newUser.html") 
     else:
         return redirect(url_for("login"))
-    
-# @app.route("/video") 
-# def video():
-#     return Response(Camera().generate_frames(),mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/logout") #Delete username from Session then go to login
 def logout():
@@ -254,7 +250,6 @@ def updateEntries():
                         continue
                     try:
                         image = base64.b64decode(entrie["image"])
-                        # image = base64.b64decode(entrie["image"][2:-1])
                     except Exception as e:
                         print(e)
                         continue
