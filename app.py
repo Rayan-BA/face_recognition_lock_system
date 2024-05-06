@@ -107,6 +107,11 @@ def history():
     else:
         return redirect(url_for("login"))
 
+@app.route("/entryImage/<entry_id>")
+def entryImage(entry_id):
+    upload = Entries.query.filter_by(entry_id=entry_id).first()
+    return send_file(BytesIO(upload.image), mimetype='image/jpg')
+
 @app.route("/newUser",methods=["POST","GET"])
 @cross_origin()
 def newUser():
@@ -238,24 +243,24 @@ def updateEntries():
             ssh.receive()
             with open("entries.json", "r") as file:
                 entries = json.load(file)
-                for entrie in entries:
-                    id = int(entrie["id"])
+                for entry in entries:
+                    id = int(entry["id"])
                     try:
-                        saved_entrie = Entries.query.filter_by(entry_id=id).first()
+                        saved_entry = Entries.query.filter_by(entry_id=id).first()
                     except Exception as e:
                         print(e)
-                        saved_entrie = None
-                    if saved_entrie is not None:
+                        saved_entry = None
+                    if saved_entry is not None:
                         print("skipping")
                         continue
                     try:
-                        image = base64.b64decode(entrie["image"])
+                        image = base64.b64decode(entry["image"])
                     except Exception as e:
                         print(e)
                         continue
-                    time = datetime.datetime.strptime(entrie["time"], "%Y-%m-%d %H:%M:%S.%f%z")
-                    new_entrie = Entries(entry_id=id, name=entrie["name"], time=time, accepted=entrie["accepted"], image=image)
-                    db.session.add(new_entrie)
+                    time = datetime.datetime.strptime(entry["time"], "%Y-%m-%d %H:%M:%S.%f%z")
+                    new_entry = Entries(entry_id=id, name=entry["name"], time=time, accepted=entry["accepted"], image=image)
+                    db.session.add(new_entry)
                     db.session.commit()
         
     ssh.close()

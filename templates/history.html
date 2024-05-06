@@ -24,7 +24,9 @@
             <td>{{item.name}}</td>
             <td>{{item.time}}</td>
             <td>{{item.accepted}}</td>
-            <td><img src="data:image/jpg;base64, " + {{item.image}}></td>
+            <td>
+                <image src="{{ url_for('entryImage', entry_id=item.entry_id) }}"></image>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
