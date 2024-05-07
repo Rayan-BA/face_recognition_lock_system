@@ -18,6 +18,8 @@ cors = CORS(app)
 # app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_SECURE"] = True
 db.init_app(app)
 app.secret_key = "graduate"
 app.permanent_session_lifetime = timedelta(hours=3) #keep session for one day
@@ -157,7 +159,7 @@ def newUser():
                     
                     flash("user  have been added successfuly")
                 
-                return redirect(url_for("registerdUsers"))
+                return redirect(url_for("newUser"))
             else:
                 # Flash all validation errors
                 for field, errors in form.errors.items():
@@ -230,7 +232,7 @@ def setTheme(set_theme):
     session['theme'] = set_theme 
     return redirect(request.referrer)
 
-@scheduler.task(trigger="interval", id="entries", seconds=30, next_run_time=datetime.datetime.now())
+# @scheduler.task(trigger="interval", id="entries", seconds=30, next_run_time=datetime.datetime.now())
 def updateEntries():
     ssh = RPi()
     ssh.connect()
