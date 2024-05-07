@@ -35,7 +35,6 @@
             <!-- Image capture -->
             <canvas id="canvas" style="display: none;"></canvas>
             <div class="row row-cols-2 row-cols-lg-5 g-2 g-lg-3" id="outputs">
-                <img id="captured-img">
             </div>
         </div>
     </div>
@@ -57,7 +56,6 @@
     let submitBtn = document.getElementById("submit-btn");
     let video = document.getElementById("vid_feed");
     let canvas = document.getElementById("canvas");
-    let capture = document.getElementById("captured-img");
     let outputs = document.getElementById("outputs");
     let captureBtn = document.getElementById("capture-btn");
     let numPictures = 0;
@@ -178,7 +176,6 @@
         capture = document.createElement("img");
         capture.setAttribute("src", data);
         outputs.appendChild(capture);
-        console.log(capture);
     }
 
 </script>
