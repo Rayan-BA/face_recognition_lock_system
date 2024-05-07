@@ -11,7 +11,7 @@ from multiprocessing import cpu_count
 torch.set_num_threads(round(cpu_count() * 0.8))
 
 class FaceEmbeddingGenerator:
-    def __init__(self, dataset="./dataset", skip_existing_labels=True, batch_size=32, device="cpu"):
+    def __init__(self, dataset="./dataset", batch_size=32, device="cpu"):
         self.dataset = dataset
         self.device = device
         self.mtcnn = MTCNN(
@@ -20,22 +20,36 @@ class FaceEmbeddingGenerator:
             device=self.device
         )
         self.resnet = InceptionResnetV1(pretrained="vggface2", device=self.device).eval()
-        self.skip_existing_labels = skip_existing_labels
         self.batch_size = batch_size
         self.finished = False
     
     def train_test(self):
         pass
     
-    def create_embeddings(self):
+    def remove_embed(self, target):
+        try:
+            embeds = np.load("./models/torch_embeddings.npz")
+            existing_embedded_data, existing_labels = embeds["arr_0"], embeds["arr_1"]
+            del_indecies = []
+            for i, label in enumerate(existing_labels):
+                if label == target: del_indecies.append(i)
+            if len(del_indecies) > 0:
+                existing_labels = np.delete(existing_labels, del_indecies)
+                existing_embedded_data = np.delete(existing_embedded_data, del_indecies)
+                np.savez("./models/torch_embeddings.npz", existing_embedded_data, existing_labels)
+                self.create_embeddings()
+        except Exception as e:
+            print(e)
+        
+    def create_embeddings(self, skip_existing_labels=True):
         print("[INFO] Creating new embeddings...")
         dataset = datasets.ImageFolder(self.dataset)
         dataset.idx_to_class = {i:c for c, i in dataset.class_to_idx.items()}
         loader = DataLoader(dataset, collate_fn=lambda x: x, batch_size=self.batch_size, shuffle=True)
 
         try:
-            embed = np.load("./models/torch_embeddings.npz")
-            existing_embedded_data, existing_labels = embed["arr_0"], embed["arr_1"]
+            embeds = np.load("./models/torch_embeddings.npz")
+            existing_embedded_data, existing_labels = embeds["arr_0"], embeds["arr_1"]
         except:
             existing_embedded_data, existing_labels = [], []
 
@@ -43,7 +57,7 @@ class FaceEmbeddingGenerator:
         new_labels = []
         for batch in tqdm(loader):
             for x, y in tqdm(batch):
-                if self.skip_existing_labels and np.isin(dataset.idx_to_class[y], dataset.classes): continue
+                if skip_existing_labels and np.isin(dataset.idx_to_class[y], dataset.classes): continue
                 batch_x_aligned = self.mtcnn(x)
                 if batch_x_aligned is not None:
                     aligned.append(batch_x_aligned)
@@ -52,7 +66,7 @@ class FaceEmbeddingGenerator:
             aligned = torch.stack(aligned).to(self.device)
             new_embeddings = self.resnet(aligned).detach().cpu()
 
-            if self.skip_existing_labels:
+            if skip_existing_labels:
                 combined_embeddings = np.concatenate([existing_embedded_data, new_embeddings])
                 combined_labels = np.concatenate([existing_labels, new_labels])
                 np.savez("./models/torch_embeddings.npz", combined_embeddings, combined_labels)
@@ -64,4 +78,4 @@ class FaceEmbeddingGenerator:
         print("[INFO] Embedding done.")
 
 if __name__ == "__main__":
-    FaceEmbeddingGenerator(skip_existing_labels=False).create_embeddings()
+    FaceEmbeddingGenerator().remove_embed("sagar")

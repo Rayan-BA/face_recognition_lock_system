@@ -18,17 +18,23 @@ class RPi:
             with open("known_hosts", "w") as file:
                 file.write(f"{self.username}@{self.hostname}")
 
-        print(f"connecting to {self.username}@{self.hostname}...")
-        self.ssh.connect(self.hostname, username=self.username)
-        self.ssh.exec_command(f"cd ef-access-control;pwd")
-        self.sftp = self.ssh.open_sftp()
-        self.sftp.chdir(self.remote_working_dir)
-        print("connected.")
+        try:
+            print(f"connecting to {self.username}@{self.hostname}...")
+            self.ssh.connect(self.hostname, username=self.username)
+            self.ssh.exec_command(f"cd ef-access-control;pwd")
+            self.sftp = self.ssh.open_sftp()
+            self.sftp.chdir(self.remote_working_dir)
+            print("connected.")
+        except Exception as e:
+            print(e)
     
     def close(self):
-        self.ssh.close()
-        self.sftp.close()
-        print("connection closed.")
+        try:
+            self.ssh.close()
+            self.sftp.close()
+            print("connection closed.")
+        except Exception as e:
+            print(e)
     
     def send(self, local_dir):
         print("sending...")

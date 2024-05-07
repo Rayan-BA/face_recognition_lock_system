@@ -157,7 +157,7 @@ def newUser():
                     
                     flash("user  have been added successfuly")
                 
-                return redirect(url_for("newUser"))
+                return redirect(url_for("registerdUsers"))
             else:
                 # Flash all validation errors
                 for field, errors in form.errors.items():
@@ -182,6 +182,7 @@ def deleteUser():
         user = request.form["delete"]
         user_to_delete = Users.query.filter_by(name=user).first()
         if user_to_delete:
+            FaceEmbeddingGenerator(dataset="./tmp").remove_embed(user)
             shutil.rmtree(pathlib.Path(f"tmp/{user}"))
             db.session.delete(user_to_delete)
             db.session.commit()
@@ -235,13 +236,15 @@ def updateEntries():
     ssh.connect()
     if not ssh.is_connected():
         print("RPI is not connected.")
-        return
+        # return
+    filename = "entries.json"
     with app.app_context():
-        current_file_size = ssh.stat("entries.json")
-        prev_file_size = EntriesControl.query.order_by(EntriesControl.file_size.desc()).first()
-        if prev_file_size != current_file_size:
+        current_file_size = ssh.stat(filename).st_size
+        prev_file_size = EntriesControl.query.filter(EntriesControl.file_size==current_file_size).first()
+        print(prev_file_size, current_file_size)
+        if prev_file_size != current_file_size and prev_file_size is not None:
             ssh.receive()
-            with open("entries.json", "r") as file:
+            with open(filename, "r") as file:
                 entries = json.load(file)
                 for entry in entries:
                     id = int(entry["id"])
@@ -262,6 +265,11 @@ def updateEntries():
                     new_entry = Entries(entry_id=id, name=entry["name"], time=time, accepted=entry["accepted"], image=image)
                     db.session.add(new_entry)
                     db.session.commit()
+            prev_file_size = current_file_size
+            new_size = EntriesControl(size=current_file_size)
+            db.session.add(new_size)
+            db.session.commit()
+            pathlib.Path.unlink(filename)
         
     ssh.close()
         
