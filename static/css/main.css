@@ -136,13 +136,16 @@ body {
   animation-delay: 5s;
 }
 
-#vid-container {
-  position: relative;
-  width: min-content;
+.capture-grid{
+  height: 400px;
+  overflow-y:auto ;
+  /* Enable vertical scrolling if content exceeds height */
 }
 
+
+
 #vid_feed {
-  display: block;
+  margin: 0%;
 }
 
 #vid_disabled {
