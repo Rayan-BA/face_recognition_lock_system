@@ -10,8 +10,9 @@ from bcrypt import checkpw
 from db import *
 from torchEmbedder import FaceEmbeddingGenerator
 from torch_SVC import mySVC
-import base64, pathlib, shutil, json
+import base64, shutil, json
 from rpi import RPi
+from pathlib import Path
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -130,10 +131,11 @@ def newUser():
                 found_user =  Users.query.filter_by(name=username).first() 
                 if found_user:
                     flash("user already exists", "info")
+                    print("user already exists")
                 else:
                     for i, img in enumerate(images):
                         try:
-                            pathlib.Path(f"tmp/{username}").mkdir(parents=True, exist_ok=True)
+                            Path(f"tmp/{username}").mkdir(parents=True, exist_ok=True)
 
                             with open(f"tmp/{username}/{i}.jpg", "wb") as file:
                                 file.write(base64.b64decode(img))
@@ -185,7 +187,7 @@ def deleteUser():
         user_to_delete = Users.query.filter_by(name=user).first()
         if user_to_delete:
             FaceEmbeddingGenerator(dataset="./tmp").remove_embed(user)
-            shutil.rmtree(pathlib.Path(f"tmp/{user}"))
+            shutil.rmtree(Path(f"tmp/{user}"))
             db.session.delete(user_to_delete)
             db.session.commit()
         return redirect(url_for("registerdUsers"))
@@ -232,46 +234,56 @@ def setTheme(set_theme):
     session['theme'] = set_theme 
     return redirect(request.referrer)
 
-# @scheduler.task(trigger="interval", id="entries", seconds=30, next_run_time=datetime.datetime.now())
+@scheduler.task(trigger="interval", id="entries", seconds=30, next_run_time=datetime.datetime.now())
 def updateEntries():
     ssh = RPi()
     ssh.connect()
     if not ssh.is_connected():
         print("RPI is not connected.")
         # return
-    filename = "entries.json"
+    entries_file = "entries.json"
     with app.app_context():
-        current_file_size = ssh.stat(filename).st_size
-        prev_file_size = EntriesControl.query.filter(EntriesControl.file_size==current_file_size).first()
+        stat = ssh.stat(entries_file)
+        if stat:
+            current_file_size = stat.st_size
+        else:
+            current_file_size = ""
+        
+        if not Path("entries_prev_size.txt").exists():
+            with open("entries_prev_size.txt", "w") as file:
+                file.write(current_file_size)
+        with open("entries_prev_size.txt", "r") as file:
+            prev_file_size = file.read()
+        
         print(prev_file_size, current_file_size)
-        if prev_file_size != current_file_size and prev_file_size is not None:
+        
+        if int(prev_file_size) != int(current_file_size) and current_file_size != "":
             ssh.receive()
-            with open(filename, "r") as file:
-                entries = json.load(file)
-                for entry in entries:
-                    id = int(entry["id"])
-                    try:
-                        saved_entry = Entries.query.filter_by(entry_id=id).first()
-                    except Exception as e:
-                        print(e)
-                        saved_entry = None
-                    if saved_entry is not None:
-                        print("skipping")
-                        continue
-                    try:
-                        image = base64.b64decode(entry["image"])
-                    except Exception as e:
-                        print(e)
-                        continue
-                    time = datetime.datetime.strptime(entry["time"], "%Y-%m-%d %H:%M:%S.%f%z")
-                    new_entry = Entries(entry_id=id, name=entry["name"], time=time, accepted=entry["accepted"], image=image)
-                    db.session.add(new_entry)
-                    db.session.commit()
-            prev_file_size = current_file_size
-            new_size = EntriesControl(size=current_file_size)
-            db.session.add(new_size)
-            db.session.commit()
-            pathlib.Path.unlink(filename)
+            if Path(entries_file).exists():
+                with open(entries_file, "r") as file:
+                    entries = json.load(file)
+                    for entry in entries:
+                        id = int(entry["id"])
+                        try:
+                            saved_entry = Entries.query.filter_by(entry_id=id).first()
+                        except Exception as e:
+                            print(e)
+                            saved_entry = None
+                        if saved_entry is not None:
+                            print("skipping")
+                            continue
+                        try:
+                            image = base64.b64decode(entry["image"])
+                        except Exception as e:
+                            print(e)
+                            continue
+                        time = datetime.datetime.strptime(entry["time"], "%Y-%m-%d %H:%M:%S.%f%z")
+                        new_entry = Entries(entry_id=id, name=entry["name"], time=time, accepted=entry["accepted"], image=image, reject_reason=entry["reject_reason"])
+                        db.session.add(new_entry)
+                        db.session.commit()
+                with open("entries_prev_size.txt", "w") as file:
+                    file.write(str(current_file_size))
+                Path.unlink(entries_file)
         
     ssh.close()
         
