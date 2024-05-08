@@ -112,6 +112,12 @@
         e.preventDefault();
     });
 
+    window.onload = function () {
+        document.getElementById("vid_toggle").checked = false;
+        document.getElementById("username").value = "";
+        captureBtn.disabled = true;
+    }
+
     function toggleVideo(e) {
         if (e.checked) {
             navigator.mediaDevices.getUserMedia({ video: true, audio: false })
