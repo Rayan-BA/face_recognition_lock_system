@@ -23,9 +23,6 @@ class FaceEmbeddingGenerator:
         self.batch_size = batch_size
         self.finished = False
     
-    def train_test(self):
-        pass
-    
     def remove_embed(self, target):
         try:
             embeds = np.load("./models/torch_embeddings.npz")

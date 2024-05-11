@@ -1,4 +1,5 @@
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
 import joblib
@@ -13,7 +14,6 @@ class mySVC:
         self.label_encoder = LabelEncoder()
         self.model = SVC(kernel="linear", probability=True)
         self.resnet = InceptionResnetV1(pretrained="vggface2").eval()
-        self.finished = False
 
     def train(self):
         print("[INFO] Training SVC model...")
@@ -22,17 +22,16 @@ class mySVC:
         encoder = self.label_encoder
         encoder.fit(y)
         y = encoder.transform(y)
-        x_train, x_test, y_train, y_test = train_test_split(embedded_x, y, shuffle=True)
+        x_train, y_train = shuffle(embedded_x, y, random_state=42)
         model = self.model
         model.fit(x_train, y_train)
-        with open("./models/torch_svc.joblib", "wb") as f:
+        with open("./models/svc_face_rec.joblib", "wb") as f:
             joblib.dump(model, f)
-        self.finished = True
         print("[INFO] Training done.")
 
     def recognize(self):
         face_cascade = self.face_cascade
-        model = joblib.load(open("./models/torch_svc.joblib", "rb"))
+        model = joblib.load(open("./models/svc_face_rec.joblib", "rb"))
         n = np.load("./models/torch_embeddings.npz")["arr_1"]
         restnet = self.resnet
         encoder = self.label_encoder

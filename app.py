@@ -8,8 +8,8 @@ from io import BytesIO
 from forms import UserForm, AccountForm, AccountFormUpdate
 from bcrypt import checkpw
 from db import *
-from torchEmbedder import FaceEmbeddingGenerator
-from torch_SVC import mySVC
+from FaceEmbeddingGenerator import FaceEmbeddingGenerator
+from SVC import mySVC
 import base64, shutil, json
 from rpi import RPi
 from pathlib import Path
