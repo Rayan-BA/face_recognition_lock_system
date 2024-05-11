@@ -8,3 +8,4 @@ antispoof-dataset/
 tmp/
 *.env
 *.log
+*.txt
