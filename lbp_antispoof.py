@@ -1,31 +1,53 @@
 import cv2 as cv
 import numpy as np
 from os import listdir
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from skimage.feature import local_binary_pattern
+from sklearn.svm import SVC
+import joblib
 
 class LBPHSpoofDetector:
-    def __init__(self, ) -> None:
-        self.recognizer = cv.face.LBPHFaceRecognizer.create(radius=1, neighbors=8, grid_x=2, grid_y=2, threshold=70)
-        self.label_encoder = LabelEncoder()
+    def __init__(self, radius, points) -> None:
+        self.model = SVC(kernel="linear", probability=True)
         self.face_cascade = cv.CascadeClassifier("./haarcascade_frontalface_default.xml")
+        self.radius = radius
+        self.points = points
 
     def train(self):
         print ("\n [INFO] Training faces. It will take a few seconds. Please wait...")
-        recognizer = self.recognizer
-        x, y = self.load_data("./antispoof-dataset")
-        encoder = self.label_encoder
-        encoder.fit(y)
-        y = encoder.transform(y)
-        X_train, X_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=42)
-        recognizer.train(X_train, y_train)
-        recognizer.write("./models/lbp-antispoof.yml")
+        model = self.model
+        images, labels = self.load_data("./antispoof-dataset")
+
+        images, labels = shuffle(images, labels, random_state=42)
+        
+        data, encoded_labels = [], []
+        for lbl in labels:
+            if lbl == "real": encoded_labels.append(0)
+            elif lbl == "spoof": encoded_labels.append(1)
+        
+        for img in images:
+            data.append(self.extract_lbp_features(img, self.radius, self.points))
+        
+        model.fit(data, labels)
+        with open("./models/svc_antispoof.joblib", "wb") as f:
+            joblib.dump(model, f)
     
+    def extract_lbp_features(self, image, radius=1, num_points=8, eps=1e-7):
+        lbp = local_binary_pattern(image, num_points, radius, method="uniform")
+
+        hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, num_points + 3), range=(0, num_points + 2))
+
+        hist = hist.astype("float")
+        hist /= (hist.sum() + eps)
+
+        return hist
+
     def _load_images(self, sub_dir):
         faces = []
         for img in listdir(sub_dir):
             path = sub_dir + "/" + img
-            face = cv.imread(path, 0) # 0 for grayscale
+            face = cv.imread(path, 0)
             face = cv.resize(face, (160, 160))
             faces.append(face)
         return faces
@@ -44,92 +66,94 @@ class LBPHSpoofDetector:
 
     def recognize(self):
         print(" [INFO] Recognizing faces...")
-        recognizer = self.recognizer
-        recognizer.read("./models/lbp-antispoof.yml")
+        model = joblib.load(open("./models/svc_antispoof.joblib", "rb"))
         video_capture = cv.VideoCapture(0)
         while video_capture.isOpened():
             ret, frame = video_capture.read()
             frame_gray = cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
-            frame_gray = cv.equalizeHist(frame_gray)
             faces = self.face_cascade.detectMultiScale(frame_gray, minSize = (100, 100))
             for(x,y,w,h) in faces:
-                cv.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
-                # conf is actually distance, so lower is better
-                pred, conf = recognizer.predict(frame_gray[y:y+h,x:x+w])
-                cv.putText(frame, f"{'real' if pred == 0 else 'spoof'}", (x+5,y-5), cv.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+                lbp = self.extract_lbp_features(cv.resize(frame_gray[y:y+h,x:x+w], (160, 160)), self.radius, self.points)
+                pred = model.predict(lbp.reshape(1, -1))
+                conf = int(max(model.predict_proba(lbp.reshape(1, -1))[0]) * 100)
+                # print(f"{'real' if pred == 0 else 'spoof'}, with conf: {conf}")
+                cv.putText(frame, f"{'real' if pred == 0 else 'spoof'} conf: {conf}", (x+5,y-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
             cv.imshow("Recognizer", frame)
             cv.setWindowProperty("Recognizer", cv.WND_PROP_TOPMOST, 1)
             # Press "ESC" for exiting video
             if cv.waitKey(1) & 0xff == 27:
                 break
         video_capture.release()
-        cv.destroyWindow("Recognizer")
+        # cv.destroyWindow("Recognizer")
 
-def evaluate_model():
-    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-    from tqdm import tqdm
+    def eval(self):
+        from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+        from tqdm import tqdm
 
-    x, y = LBPHSpoofDetector().load_data("./antispoof-dataset")
-    
-    encoder = LabelEncoder()
-    encoder.fit(y)
-    y = encoder.transform(y)
+        x, y = self.load_data("./antispoof-dataset")
 
-    X_train, X_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=42)
+        model = self.model
+        
+        X_train, X_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=42, test_size=0.2)
+        X_train, X_test, y_train, y_test = np.asarray(X_train), np.asarray(X_test), np.asarray(y_train), np.asarray(y_test)
 
-    accuracy_list = []
-    precision_list = []
-    recall_list = []
-    f1_list = []
-    
-    threshold = 70
-    radius = 1
-    neighbors = 8
-    grid_ys = np.arange(2, 9, 2)
-    grid_xs = np.arange(2, 9, 2)
+        # print(X_train.shape, y_train.shape)
+        # print(X_test.shape, y_test.shape)
+        # exit()
+        
+        radius_pool = np.arange(1, 9)
+        points_pool = np.arange(3, 25)
 
-    for grid_y in tqdm(grid_ys):
-        for grid_x in tqdm(grid_xs):
-            recognizer = cv.face.LBPHFaceRecognizer.create(threshold=threshold,radius=radius, neighbors=neighbors, grid_y=grid_y, grid_x=grid_x)
-            recognizer.train(X_train, y_train)
+        encoded_labels = []
+        for lbl in y_train:
+            if lbl == "real": encoded_labels.append(0)
+            elif lbl == "spoof": encoded_labels.append(1) 
+        
+        ey_test = []
+        for lbl_test in y_test:
+            if lbl_test == "real": ey_test.append(0)
+            elif lbl_test == "spoof": ey_test.append(1)
+        y_test = np.asarray(ey_test)
 
-            y_pred = []
+        accuracy, cm, precision, recall, f1 = [],[],[],[],[]
+        
+        for radius in tqdm(radius_pool):
+            for points in tqdm(points_pool):
 
-            for img in X_test:
-                # Make predictions on the test set
-                y_pred.append(recognizer.predict(img)[0])
+                data = []
+                for train_img in tqdm(X_train):
+                    data.append(self.extract_lbp_features(train_img, radius, points))
+                
+                model.fit(data, encoded_labels)
 
-            # Calculate accuracy
-            accuracy = accuracy_score(y_test, y_pred)
-            accuracy_list.append(accuracy)
+                y_preds = []
+                for img_test in tqdm(X_test):
+                    # Predict the labels of the test set
+                    y_pred = model.predict(self.extract_lbp_features(img_test, radius, points).reshape(1, -1))
+                    y_preds.append(y_pred)
+                y_preds = np.asarray(y_preds).reshape(559,)
+                
+                print(y_preds, y_preds.shape, y_test, y_test.shape)
 
-            # Calculate precision
-            precision = precision_score(y_test, y_pred, average="macro")
-            precision_list.append(precision)
+                # Compute the accuracy of the model
+                accuracy.append((np.mean(y_preds == y_test)))
 
-            # Calculate recall
-            recall = recall_score(y_test, y_pred, average="macro")
-            recall_list.append(recall)
+                # Compute the confusion matrix
+                cm.append(confusion_matrix(y_test, y_preds))
 
-            # Calculate F1 score
-            f1 = f1_score(y_test, y_pred, average="macro")
-            f1_list.append(f1)
+                # # Compute the precision, recall, and F1 score
+                precision.append(precision_score(y_test, y_preds, average='binary'))
+                recall.append(recall_score(y_test, y_preds, average='binary'))
+                f1.append(f1_score(y_test, y_preds, average='binary'))
 
-    # best_threshold = thresholds[np.argmax(f1_list)]
-    best_params = (grid_ys[np.argmax(f1_list)], grid_xs[np.argmax(f1_list)])
-
-    # Calculate the average performance metric for each threshold value
-    avg_accuracy = np.mean(accuracy_list)
-    avg_precision = np.mean(precision_list)
-    avg_recall = np.mean(recall_list)
-    avg_f1 = np.mean(f1_list)
-
-    # Print the evaluation metrics
-    print(f"Best parameters: radius={radius}, neighbors={neighbors}, grid_y={best_params[0]}, grid_x={best_params[1]}")
-    print(f"Accuracy: {np.max(accuracy_list):.2f} ({avg_accuracy:.2f} ± {np.std(accuracy_list):.2f})")
-    print(f"Precision: {np.max(precision_list):.2f} ({avg_precision:.2f} ± {np.std(precision_list):.2f})")
-    print(f"Recall: {np.max(recall_list):.2f} ({avg_recall:.2f} ± {np.std(recall_list):.2f})")
-    print(f"F1 Score: {np.max(f1_list):.2f} ({avg_f1:.2f} ± {np.std(f1_list):.2f})")
+        best_params = (radius_pool[np.max(f1)], points_pool[np.max(f1)])
+        # Print the evaluation metrics
+        print(f"Best params: radius={best_params[0]}, points={best_params[1]}")
+        print(f"Accuracy: max={np.max(accuracy) * 100} mean={np.mean(accuracy)} std={np.std(accuracy)}")
+        print(f"Confusion Matrix: max={np.max(cm) * 100} mean={np.mean(cm)} std={np.std(cm)}")
+        print(f"Precision: max={np.max(precision) * 100} mean={np.mean(precision)} std={np.std(precision)}")
+        print(f"Recall: max={np.max(recall) * 100} mean={np.mean(recall)} std={np.std(recall)}")
+        print(f"F1 Score: max={np.max(f1) * 100} mean={np.mean(f1)} std={np.std(f1)}")
 
 if __name__ == "__main__":
-    LBPHSpoofDetector().recognize()
+    LBPHSpoofDetector(8, 24).eval()
