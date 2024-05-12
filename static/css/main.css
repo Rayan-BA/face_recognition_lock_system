@@ -137,7 +137,6 @@ body {
 }
 
 .capture-grid{
-  height: 400px;
   overflow-y:auto ;
   /* Enable vertical scrolling if content exceeds height */
 }

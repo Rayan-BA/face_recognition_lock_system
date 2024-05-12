@@ -22,7 +22,7 @@
         <div class="vid-container col border p-4">
             <!-- Video disabled placeholder -->
             <div id="vid_disabled">
-                <img class="rounded-sm mx-auto" src="static\images\webcam_disabled.png" height="280px" width="540px">
+                <img class="rounded-sm mx-auto rounded" src="static\images\webcam_disabled.png" width="640px" height="480px">
             </div>
             <!-- Video feed -->
             <div id="vid-container" style="display: none;">
@@ -34,13 +34,12 @@
         <div class="capture-grid col border p-2">
             <!-- Image capture -->
             <canvas id="canvas" style="display: none;"></canvas>
-            <div class="row row-cols-2 row-cols-lg-5 g-2 g-lg-3" id="outputs">
+            <div class="row row-cols-2 row-cols-lg-5 g-1 g-lg-3" id="outputs">
             </div>
         </div>
     </div>
     <br>
-    <button class="btn btn-primary w-100" id="submit-btn" type="submit">Submit</button>
-
+        <button class="btn btn-primary w-100 p-2" id="submit-btn" type="submit">Submit</button>
     <!-- <p>OR you can upload:</p>
 
     <div class="input-group mb-3">
@@ -60,8 +59,8 @@
     let captureBtn = document.getElementById("capture-btn");
     let numPictures = 0;
 
-    const width = 540;
-    const height = 280;
+    const width = 640;
+    const height = 480;
     const streaming = false;
 
     let images = [];
