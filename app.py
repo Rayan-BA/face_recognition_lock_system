@@ -13,6 +13,7 @@ from SVC import mySVC
 import base64, shutil, json
 from rpi import RPi
 from pathlib import Path
+from utils import augment
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -130,7 +131,7 @@ def newUser():
                 username = request.form["username"]
                 found_user =  Users.query.filter_by(name=username).first() 
                 if found_user:
-                    flash("user already exists", "info")
+                    flash("User already exists.", "info")
                     print("user already exists")
                 else:
                     for i, img in enumerate(images):
@@ -141,26 +142,26 @@ def newUser():
                                 file.write(base64.b64decode(img))
                         except Exception as e:
                             print(e)
-                    
                     try:
-                        FaceEmbeddingGenerator(dataset="./tmp").create_embeddings()
-                        mySVC().train()
-
-                        ssh = RPi()
-                        ssh.connect()
-                        ssh.send("./models")
-                        ssh.close()
-                    
                         with open(f"tmp/{username}/0.jpg", "rb") as file:
-                            image = file.read()
-                            new_user = Users(username, image)
-                            db.session.add(new_user)
-                            db.session.commit() #if user not found then add new user to data base db
+                                image = file.read()
+                                new_user = Users(username, image)
+                                db.session.add(new_user)
+                                db.session.commit() #if user not found then add new user to data base db
+                        # augment("./tmp")
+                        if Users.query.count() >=2:
+                            FaceEmbeddingGenerator(dataset="./tmp").create_embeddings(skip_existing_labels=True)
+                            mySVC().train()
+
+                            ssh = RPi()
+                            ssh.connect()
+                            ssh.send("./models")
+                            ssh.close()
+                        else:
+                            print("At least two users are needed for learning. Learning will initiate one more users are added.")
                     except Exception as e:
                         print(e)
-                    
-                    flash("user  have been added successfuly")
-                
+                    flash("User  have been added successfuly!", "message")
                 return redirect(url_for("newUser"))
             else:
                 # Flash all validation errors
@@ -186,10 +187,14 @@ def deleteUser():
         user = request.form["delete"]
         user_to_delete = Users.query.filter_by(name=user).first()
         if user_to_delete:
-            FaceEmbeddingGenerator(dataset="./tmp").remove_embed(user)
-            shutil.rmtree(Path(f"tmp/{user}"))
-            db.session.delete(user_to_delete)
-            db.session.commit()
+            try:
+                db.session.delete(user_to_delete)
+                db.session.commit()
+                shutil.rmtree(Path(f"tmp/{user}"))
+                FaceEmbeddingGenerator(dataset="./tmp").remove_embed(user)
+                FaceEmbeddingGenerator(dataset="./tmp").create_embeddings(skip_existing_labels=True)
+            except Exception as e:
+                print(e)
         return redirect(url_for("registerdUsers"))
     
 @app.route('/download/<upload_id>') #to return image from data base
@@ -208,7 +213,7 @@ def updateSettings():
                     new_password_input = request.form["new_password"]
                     new_password = Account(new_password_input)
                     if user_account and checkpw(new_password_input.encode('utf-8'), user_account.password_hash.encode('utf-8')):
-                        flash("you cant use the same password","info")
+                        flash("You can't use the same password.","info")
                         return redirect(request.referrer)
                     else:
                         db.session.delete(user_account)

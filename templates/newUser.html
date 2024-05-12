@@ -22,7 +22,8 @@
         <div class="vid-container col border p-4">
             <!-- Video disabled placeholder -->
             <div id="vid_disabled">
-                <img class="rounded-sm mx-auto rounded" src="static\images\webcam_disabled.png" width="640px" height="480px">
+                <img class="rounded-sm mx-auto rounded" src="static\images\webcam_disabled.png" width="640px"
+                    height="480px">
             </div>
             <!-- Video feed -->
             <div id="vid-container" style="display: none;">
@@ -39,7 +40,7 @@
         </div>
     </div>
     <br>
-        <button class="btn btn-primary w-100 p-2" id="submit-btn" type="submit">Submit</button>
+    <button class="btn btn-primary w-100 p-2" id="submit-btn" type="submit">Submit</button>
     <!-- <p>OR you can upload:</p>
 
     <div class="input-group mb-3">
@@ -109,6 +110,9 @@
         }
         // clearpictures();
         e.preventDefault();
+        // setTimeout(() => {
+        //     window.location.reload();
+        // }, 200);
     });
 
     window.onload = function () {
