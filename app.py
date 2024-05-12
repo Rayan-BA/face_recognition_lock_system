@@ -156,10 +156,11 @@ def newUser():
                             new_user = Users(username, image)
                             db.session.add(new_user)
                             db.session.commit() #if user not found then add new user to data base db
+                            flash("user  have been added successfuly")
                     except Exception as e:
                         print(e)
                     
-                    flash("user  have been added successfuly")
+                    
                 
                 return redirect(url_for("newUser"))
             else:
