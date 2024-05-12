@@ -29,7 +29,7 @@ class LBPHSpoofDetector:
         
         for img in X_train:
             data.append(self.extract_lbp_features(img, self.radius, self.points))
-        
+
         model.fit(data, encoded_labels)
         with open("./models/svc_antispoof_prec.joblib", "wb") as f:
             joblib.dump(model, f)
@@ -65,9 +65,9 @@ class LBPHSpoofDetector:
         print(" [INFO] Loading done.")
         return np.asarray(x), np.asarray(y)
 
-    def recognize(self):
+    def recognize(self, model):
         print(" [INFO] Recognizing faces...")
-        model = joblib.load(open("./models/svc_antispoof.joblib", "rb"))
+        model = joblib.load(open(model, "rb"))
         video_capture = cv.VideoCapture(0)
         while video_capture.isOpened():
             ret, frame = video_capture.read()
@@ -173,4 +173,14 @@ ROC AUC: max={np.max(roc_auc)} at {np.argmax(roc_auc)}, mean={np.mean(roc_auc)},
             file.write(scores)
 
 if __name__ == "__main__":
-    LBPHSpoofDetector(1000, 6, 11).train()
+    '''
+    make sure parameters match antispoof model
+    acc     C=1000, R=7, P=10
+    prec    C=1000, R=6, P=11
+    rec	    C=100,  R=8, P=12
+    f1 	    C=1000, R=7, P=10
+    roc auc	C=100,  R=8, P=16
+
+    f1 acc is best so far
+    '''
+    LBPHSpoofDetector(1000, 7, 10).recognize("./models/svc_antispoof_f1_acc.joblib")
