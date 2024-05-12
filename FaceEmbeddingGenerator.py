@@ -50,27 +50,31 @@ class FaceEmbeddingGenerator:
             embeds = np.load("./models/torch_embeddings.npz")
             existing_embedded_data, existing_labels = embeds["arr_0"], embeds["arr_1"]
             # print(existing_embedded_data)
-            # print(existing_labels)
+            # print(dataset.classes)
             # exit()
         except:
-            existing_embedded_data, existing_labels = [], []
+            existing_embedded_data, existing_labels = np.asarray([]), []
 
         aligned , new_labels = [], []
         for batch in tqdm(loader):
             for x, y in tqdm(batch):
-                if skip_existing_labels and np.isin(dataset.idx_to_class[y], set(existing_labels)): continue
+                if skip_existing_labels and np.isin(dataset.idx_to_class[y], dataset.classes, assume_unique=True): continue
                 batch_x_aligned = self.mtcnn(x)
                 if batch_x_aligned is not None:
                     aligned.append(batch_x_aligned)
                     new_labels.append(dataset.idx_to_class[y])
         if len(aligned) > 0:
             aligned = torch.stack(aligned).to(self.device)
-            new_embeddings = self.resnet(aligned).detach()
+            new_embeddings = np.asarray(self.resnet(aligned).detach())
             if skip_existing_labels:
-                # if len(existing_embedded_data) == 0: existing_embedded_data = np.empty((0, new_embeddings.shape[1]))
+                if len(existing_embedded_data) == 0: existing_embedded_data = np.empty((0, new_embeddings.shape[1]))
                 # else: existing_embedded_data = np.expand_dims(existing_embedded_data, axis=0)
                 # print(existing_embedded_data)
                 # print(new_embeddings)
+                # for i in new_embeddings:
+                #     print(i)
+                print(existing_embedded_data.shape)
+                print(new_embeddings.shape)
                 combined_embeddings = np.concatenate([existing_embedded_data, new_embeddings])
                 combined_labels = np.concatenate([existing_labels, new_labels])
                 np.savez("./models/torch_embeddings.npz", combined_embeddings, combined_labels)
@@ -80,6 +84,6 @@ class FaceEmbeddingGenerator:
         print("[INFO] Embedding done.")
 
 if __name__ == "__main__":
-    # FaceEmbeddingGenerator("./tmp").create_embeddings(skip_existing_labels=False)
-    FaceEmbeddingGenerator("./tmp").remove_embed("Meli")
+    FaceEmbeddingGenerator("./tmp").create_embeddings(skip_existing_labels=True)
+    # FaceEmbeddingGenerator("./tmp").remove_embed("Meli")
 
