@@ -62,12 +62,19 @@ class RPi:
         except Exception as e:
             print(e)
 
+    # def launch_app(self):
+    #     try:
+    #         self.ssh.exec_command(f"cd /home/pi/ef-access-control;python app.py")
+    #         print("remote app launched.")
+    #     except Exception as e:
+    #         print(e)
+
 
 if __name__ == "__main__":
     s = RPi()
     s.connect()
     # s.send("models")
     # s.receive("./entries.json")
-    print(s.stat("entries.json").st_size) # if size changes receive updated files
+    # print(s.stat("entries.json").st_size) # if size changes receive updated files
     s.close()
     

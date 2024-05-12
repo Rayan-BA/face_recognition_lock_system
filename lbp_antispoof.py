@@ -2,10 +2,9 @@ import cv2 as cv
 import numpy as np
 from os import listdir
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
 from skimage.feature import local_binary_pattern
 from sklearn.svm import SVC
-import joblib, torch
+import joblib
 
 class LBPHSpoofDetector:
     def __init__(self, C, radius, points) -> None:
@@ -15,7 +14,7 @@ class LBPHSpoofDetector:
         self.C = C
         self.model = SVC(C=self.C, kernel="rbf", probability=True)
 
-    def train(self):
+    def train(self, model_file):
         print ("\n [INFO] Training faces. It will take a few seconds. Please wait...")
         model = self.model
         images, labels = self.load_data("./antispoof-dataset")
@@ -31,7 +30,7 @@ class LBPHSpoofDetector:
             data.append(self.extract_lbp_features(img, self.radius, self.points))
 
         model.fit(data, encoded_labels)
-        with open("./models/svc_antispoof_prec.joblib", "wb") as f:
+        with open(model_file, "wb") as f:
             joblib.dump(model, f)
     
     def extract_lbp_features(self, image, radius=1, num_points=8, eps=1e-7):
@@ -65,9 +64,9 @@ class LBPHSpoofDetector:
         print(" [INFO] Loading done.")
         return np.asarray(x), np.asarray(y)
 
-    def recognize(self, model):
+    def recognize(self, model_file):
         print(" [INFO] Recognizing faces...")
-        model = joblib.load(open(model, "rb"))
+        model = joblib.load(open(model_file, "rb"))
         video_capture = cv.VideoCapture(0)
         while video_capture.isOpened():
             ret, frame = video_capture.read()
@@ -181,6 +180,6 @@ if __name__ == "__main__":
     f1 	    C=1000, R=7, P=10
     roc auc	C=100,  R=8, P=16
 
-    f1 acc is best so far
+    f1_acc and roc_auc is best so far
     '''
-    LBPHSpoofDetector(1000, 7, 10).recognize("./models/svc_antispoof_f1_acc.joblib")
+    LBPHSpoofDetector(100, 8, 16).recognize("./models/svc_antispoof_roc_auc_v2.joblib")
