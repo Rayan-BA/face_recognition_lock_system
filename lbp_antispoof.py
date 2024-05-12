@@ -5,32 +5,33 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from skimage.feature import local_binary_pattern
 from sklearn.svm import SVC
-import joblib
+import joblib, torch
 
 class LBPHSpoofDetector:
-    def __init__(self, radius, points) -> None:
-        self.model = SVC(kernel="linear", probability=True)
+    def __init__(self, C, radius, points) -> None:
         self.face_cascade = cv.CascadeClassifier("./haarcascade_frontalface_default.xml")
         self.radius = radius
         self.points = points
+        self.C = C
+        self.model = SVC(C=self.C, kernel="rbf", probability=True)
 
     def train(self):
         print ("\n [INFO] Training faces. It will take a few seconds. Please wait...")
         model = self.model
         images, labels = self.load_data("./antispoof-dataset")
 
-        images, labels = shuffle(images, labels, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(images, labels, shuffle=True, random_state=42, test_size=0.05)
         
         data, encoded_labels = [], []
-        for lbl in labels:
+        for lbl in y_train:
             if lbl == "real": encoded_labels.append(0)
             elif lbl == "spoof": encoded_labels.append(1)
         
-        for img in images:
+        for img in X_train:
             data.append(self.extract_lbp_features(img, self.radius, self.points))
         
-        model.fit(data, labels)
-        with open("./models/svc_antispoof.joblib", "wb") as f:
+        model.fit(data, encoded_labels)
+        with open("./models/svc_antispoof_prec.joblib", "wb") as f:
             joblib.dump(model, f)
     
     def extract_lbp_features(self, image, radius=1, num_points=8, eps=1e-7):
@@ -87,13 +88,12 @@ class LBPHSpoofDetector:
         # cv.destroyWindow("Recognizer")
 
     def eval(self):
-        from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+        from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
+        from sklearn.model_selection import cross_val_score
         from tqdm import tqdm
 
         x, y = self.load_data("./antispoof-dataset")
 
-        model = self.model
-        
         X_train, X_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=42, test_size=0.2)
         X_train, X_test, y_train, y_test = np.asarray(X_train), np.asarray(X_test), np.asarray(y_train), np.asarray(y_test)
 
@@ -101,13 +101,14 @@ class LBPHSpoofDetector:
         # print(X_test.shape, y_test.shape)
         # exit()
         
-        radius_pool = np.arange(1, 9)
-        points_pool = np.arange(3, 25)
+        radius_pool = np.arange(4, 9)
+        points_pool = np.arange(10, 25)
+        C_pool = [100, 1000]
 
         encoded_labels = []
         for lbl in y_train:
             if lbl == "real": encoded_labels.append(0)
-            elif lbl == "spoof": encoded_labels.append(1) 
+            elif lbl == "spoof": encoded_labels.append(1)
         
         ey_test = []
         for lbl_test in y_test:
@@ -115,45 +116,61 @@ class LBPHSpoofDetector:
             elif lbl_test == "spoof": ey_test.append(1)
         y_test = np.asarray(ey_test)
 
-        accuracy, cm, precision, recall, f1 = [],[],[],[],[]
+        accuracy, cm, precision, recall, f1, cross_val, roc_auc  = [],[],[],[],[],[],[]
         
-        for radius in tqdm(radius_pool):
-            for points in tqdm(points_pool):
+        for C_factor in tqdm(C_pool):
+            model = SVC(C=C_factor, kernel="rbf", probability=True)
+            for radius in tqdm(radius_pool):
+                for points in tqdm(points_pool):
+                    print(C_factor, radius, points)
 
-                data = []
-                for train_img in tqdm(X_train):
-                    data.append(self.extract_lbp_features(train_img, radius, points))
-                
-                model.fit(data, encoded_labels)
+                    data = []
+                    for train_img in X_train:
+                        data.append(self.extract_lbp_features(train_img, radius, points))
+                    
+                    cross_val.append(cross_val_score(model, data, encoded_labels, cv=5))
 
-                y_preds = []
-                for img_test in tqdm(X_test):
-                    # Predict the labels of the test set
-                    y_pred = model.predict(self.extract_lbp_features(img_test, radius, points).reshape(1, -1))
-                    y_preds.append(y_pred)
-                y_preds = np.asarray(y_preds).reshape(559,)
-                
-                print(y_preds, y_preds.shape, y_test, y_test.shape)
+                    model.fit(data, encoded_labels)
 
-                # Compute the accuracy of the model
-                accuracy.append((np.mean(y_preds == y_test)))
+                    y_preds = []
+                    y_scores = []
+                    for img_test in X_test:
+                        # Predict the labels of the test set
+                        y_pred = model.predict(self.extract_lbp_features(img_test, radius, points).reshape(1, -1))
+                        y_preds.append(y_pred)
+                        y_score = model.predict_proba(self.extract_lbp_features(img_test, radius, points).reshape(1, -1))[:,1]
+                        y_scores.append(y_score)
+                    y_preds = np.asarray(y_preds).reshape(559,)
+                    
+                    # Compute the accuracy of the model
+                    accuracy.append((np.mean(y_preds == y_test)))
 
-                # Compute the confusion matrix
-                cm.append(confusion_matrix(y_test, y_preds))
+                    # Compute the confusion matrix
+                    cm.append(confusion_matrix(y_test, y_preds))
 
-                # # Compute the precision, recall, and F1 score
-                precision.append(precision_score(y_test, y_preds, average='binary'))
-                recall.append(recall_score(y_test, y_preds, average='binary'))
-                f1.append(f1_score(y_test, y_preds, average='binary'))
+                    # # Compute the precision, recall, and F1 score
+                    precision.append(precision_score(y_test, y_preds, average='binary'))
+                    recall.append(recall_score(y_test, y_preds, average='binary'))
+                    f1.append(f1_score(y_test, y_preds, average='binary'))
 
-        best_params = (radius_pool[np.max(f1)], points_pool[np.max(f1)])
-        # Print the evaluation metrics
-        print(f"Best params: radius={best_params[0]}, points={best_params[1]}")
-        print(f"Accuracy: max={np.max(accuracy) * 100} mean={np.mean(accuracy)} std={np.std(accuracy)}")
-        print(f"Confusion Matrix: max={np.max(cm) * 100} mean={np.mean(cm)} std={np.std(cm)}")
-        print(f"Precision: max={np.max(precision) * 100} mean={np.mean(precision)} std={np.std(precision)}")
-        print(f"Recall: max={np.max(recall) * 100} mean={np.mean(recall)} std={np.std(recall)}")
-        print(f"F1 Score: max={np.max(f1) * 100} mean={np.mean(f1)} std={np.std(f1)}")
+                    # Compute the ROC AUC score
+                    fpr, tpr, thresholds = roc_curve(y_test, y_scores)
+                    roc_auc.append(auc(fpr, tpr))
+
+            # best_params = (C_pool[np.argmax(f1)], radius_pool[np.argmax(f1)], points_pool[np.argmax(f1)])
+            # Print the evaluation metrics
+            # print(f"Best params: C={best_params[0]}, radius={best_params[1]}, points={best_params[2]}")
+        scores = f"""
+Accuracy: max={np.max(accuracy) * 100} at {np.argmax(accuracy)}, mean={np.mean(accuracy) * 100}, std={np.std(accuracy) * 100}
+Cross validation: max={np.max(cross_val)} at {np.argmax(cross_val)}, mean={np.mean(cross_val)}, std={np.std(cross_val)}
+Confusion Matrix: max={np.max(cm)} at {np.argmax(cm)}, mean={np.mean(cm)}, std={np.std(cm)}
+Precision: max={np.max(precision)} at {np.argmax(precision)}, mean={np.mean(precision)}, std={np.std(precision)}
+Recall: max={np.max(recall)} at {np.argmax(recall)}, mean={np.mean(recall)}, std={np.std(recall)}
+F1 Score: max={np.max(f1)} at {np.argmax(f1)}, mean={np.mean(f1)}, std={np.std(f1)}
+ROC AUC: max={np.max(roc_auc)} at {np.argmax(roc_auc)}, mean={np.mean(roc_auc)}, std={np.std(roc_auc)}"""
+
+        with open("scores.txt", "a") as file:
+            file.write(scores)
 
 if __name__ == "__main__":
-    LBPHSpoofDetector(8, 24).eval()
+    LBPHSpoofDetector(1000, 6, 11).train()
