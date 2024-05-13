@@ -3,6 +3,7 @@
 from flask import Flask, render_template, url_for, request, redirect, session, send_file, Response, flash
 from flask_cors import CORS, cross_origin
 from flask_apscheduler import APScheduler
+from flaskwebgui import FlaskUI
 from datetime import timedelta
 from io import BytesIO
 from forms import UserForm, AccountForm, AccountFormUpdate
@@ -299,4 +300,5 @@ def updateEntries():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True, use_reloader=False)
+    # app.run(debug=True, use_reloader=False)
+    FlaskUI(app=app, server="flask").run()
