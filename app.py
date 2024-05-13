@@ -148,7 +148,7 @@ def newUser():
                                 new_user = Users(username, image)
                                 db.session.add(new_user)
                                 db.session.commit() #if user not found then add new user to data base db
-                        # augment("./tmp")
+                        augment(f"./tmp/{username}", f"./tmp/{username}")
                         if Users.query.count() >=2:
                             FaceEmbeddingGenerator(dataset="./tmp").create_embeddings(skip_existing_labels=True)
                             mySVC().train()
