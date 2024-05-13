@@ -107,6 +107,7 @@ def registerdUsers():
 @app.route("/history")
 def history():
     if "user" in session:
+        updateEntries()
         return render_template("history.html", values = Entries.query.order_by(Entries.time.desc()).all())
     else:
         return redirect(url_for("login"))
@@ -193,6 +194,10 @@ def deleteUser():
                 shutil.rmtree(Path(f"tmp/{user}"))
                 FaceEmbeddingGenerator(dataset="./tmp").remove_embed(user)
                 FaceEmbeddingGenerator(dataset="./tmp").create_embeddings(skip_existing_labels=True)
+                ssh = RPi()
+                ssh.connect()
+                ssh.send("./models")
+                ssh.close()
             except Exception as e:
                 print(e)
         return redirect(url_for("registerdUsers"))
@@ -249,14 +254,13 @@ def updateEntries():
     entries_file = "entries.json"
     with app.app_context():
         stat = ssh.stat(entries_file)
-        if stat:
-            current_file_size = stat.st_size
-        else:
-            current_file_size = ""
+
+        if stat is None: current_file_size = ""
+        else: current_file_size = stat.st_size
         
         if not Path("entries_prev_size.txt").exists():
             with open("entries_prev_size.txt", "w") as file:
-                file.write(current_file_size)
+                file.write(str(current_file_size))
         with open("entries_prev_size.txt", "r") as file:
             prev_file_size = file.read()
         
@@ -288,7 +292,7 @@ def updateEntries():
                         db.session.commit()
                 with open("entries_prev_size.txt", "w") as file:
                     file.write(str(current_file_size))
-                Path.unlink(entries_file)
+                # Path.unlink(entries_file)
         
     ssh.close()
         
