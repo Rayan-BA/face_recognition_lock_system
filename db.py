@@ -11,7 +11,7 @@ class Users(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True)
     image = db.Column(db.LargeBinary)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.now(datetime.UTC))
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now(datetime.timezone.utc))
 
 class Account(db.Model):
     def __init__(self, password):
