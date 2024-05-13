@@ -12,7 +12,7 @@ class mySVC:
     def __init__(self) -> None:
         self.face_cascade = cv.CascadeClassifier("haarcascade_frontalface_default.xml")
         self.label_encoder = LabelEncoder()
-        self.model = SVC(kernel="linear", probability=True)
+        self.model = SVC(C=100, kernel="rbf", probability=True)
         self.resnet = InceptionResnetV1(pretrained="vggface2").eval()
 
     def train(self):

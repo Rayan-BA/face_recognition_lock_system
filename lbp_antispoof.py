@@ -75,9 +75,10 @@ class LBPHSpoofDetector:
             for(x,y,w,h) in faces:
                 lbp = self.extract_lbp_features(cv.resize(frame_gray[y:y+h,x:x+w], (160, 160)), self.radius, self.points)
                 pred = model.predict(lbp.reshape(1, -1))
-                conf = int(max(model.predict_proba(lbp.reshape(1, -1))[0]) * 100)
+                conf = int(max(model.predict_proba(lbp.reshape(1, -1))[0]*100))
+                # print(pred, conf)
                 # print(f"{'real' if pred == 0 else 'spoof'}, with conf: {conf}")
-                cv.putText(frame, f"{'real' if pred == 0 else 'spoof'} conf: {conf}", (x+5,y-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+                cv.putText(frame, f"{model_file[23:29]} {'real' if pred == 0 else 'spoof'} conf: {conf}", (x+5,y-5), cv.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
             cv.imshow("Recognizer", frame)
             cv.setWindowProperty("Recognizer", cv.WND_PROP_TOPMOST, 1)
             # Press "ESC" for exiting video
@@ -101,8 +102,8 @@ class LBPHSpoofDetector:
         # exit()
         
         radius_pool = np.arange(4, 9)
-        points_pool = np.arange(10, 25)
-        C_pool = [100, 1000]
+        points_pool = np.arange(7, 25)
+        C_pool = [10, 100, 1000]
 
         encoded_labels = []
         for lbl in y_train:
@@ -139,7 +140,7 @@ class LBPHSpoofDetector:
                         y_preds.append(y_pred)
                         y_score = model.predict_proba(self.extract_lbp_features(img_test, radius, points).reshape(1, -1))[:,1]
                         y_scores.append(y_score)
-                    y_preds = np.asarray(y_preds).reshape(559,)
+                    y_preds = np.asarray(y_preds)
                     
                     # Compute the accuracy of the model
                     accuracy.append((np.mean(y_preds == y_test)))
@@ -179,7 +180,18 @@ if __name__ == "__main__":
     rec	    C=100,  R=8, P=12
     f1 	    C=1000, R=7, P=10
     roc auc	C=100,  R=8, P=16
+    
+    acc 50  C=100,  R=4, P=14
 
     f1_acc and roc_auc is best so far
     '''
-    LBPHSpoofDetector(100, 8, 16).recognize("./models/svc_antispoof_roc_auc_v2.joblib")
+    LBPHSpoofDetector(100, 4, 14).recognize("./models/svc_antispoof_acc50.joblib")
+    # models = [
+    #         {"file":"svc_antispoof_f1_acc_v2.joblib", "C": 1000, "R":7, "P":10},
+    #         {"file":"svc_antispoof_prec_v2.joblib", "C": 1000, "R":6, "P":11},
+    #         {"file":"svc_antispoof_rec_v2.joblib", "C": 100, "R":8, "P":12},
+    #         {"file":"svc_antispoof_roc_auc_v2.joblib", "C": 100, "R":8, "P":16},
+    #     ]
+    
+    # for model in models:
+    #     LBPHSpoofDetector(model["C"], model["R"], model["P"]).recognize(f"./models/{model['file']}")
