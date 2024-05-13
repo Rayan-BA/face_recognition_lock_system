@@ -7,7 +7,8 @@ class RPi:
     def __init__(self, hostname = "raspberrypi", username = "pi") -> None:
         self.hostname = hostname
         self.username = username
-        self.known_hosts = "C:\\Users\\rbalh\\.ssh\\known_hosts"
+        self.password = "raspberry"
+        self.known_hosts = "C:\\Users\\user\\.ssh\\known_hosts"
         self.remote_working_dir = "ef-access-control"
         self.ssh = paramiko.SSHClient()
 
@@ -18,15 +19,15 @@ class RPi:
             with open("known_hosts", "w") as file:
                 file.write(f"{self.username}@{self.hostname}")
 
-        try:
-            print(f"connecting to {self.username}@{self.hostname}...")
-            self.ssh.connect(self.hostname, username=self.username)
-            self.ssh.exec_command(f"cd ef-access-control;pwd")
-            self.sftp = self.ssh.open_sftp()
-            self.sftp.chdir(self.remote_working_dir)
-            print("connected.")
-        except Exception as e:
-            print(e)
+        # try:
+        print(f"connecting to {self.username}@{self.hostname}...")
+        self.ssh.connect(self.hostname, username=self.username, password=self.password)
+        self.ssh.exec_command(f"cd ef-access-control;pwd")
+        self.sftp = self.ssh.open_sftp()
+        self.sftp.chdir(self.remote_working_dir)
+        print("connected.")
+        # except Exception as e:
+        #     print(e)
     
     def close(self):
         try:
@@ -40,6 +41,7 @@ class RPi:
         print("sending...")
         try:
             for file in listdir(local_dir):
+                # print(file)
                 self.sftp.put(localpath=f"{local_dir}/{file}", remotepath=file)
         except Exception as e:
             print(e)
@@ -48,6 +50,7 @@ class RPi:
         print("receiving...")
         try:
             self.sftp.get(remotepath="entries.json", localpath=local_dir)
+            # self.sftp.remove("entries.json")
         except Exception as e:
             print(e)
     
@@ -73,6 +76,7 @@ class RPi:
 if __name__ == "__main__":
     s = RPi()
     s.connect()
+    # s.send("./models")
     # s.send("models")
     # s.receive("./entries.json")
     # print(s.stat("entries.json").st_size) # if size changes receive updated files
