@@ -30,7 +30,7 @@
                 <video id="vid_feed" class="rounded-sm"></video>
             </div>
             <br>
-            <button class="btn btn-outline-primary w-100" id="capture-btn" type="button" disabled>Capture</button>
+            <button class="btn btn-outline-primary w-100" id="capture-btn" type="button" disabled>Hold to Capture (0/52)</button>
         </div>
         <div class="capture-grid col border p-2">
             <!-- Image capture -->
@@ -63,6 +63,7 @@
     const width = 640;
     const height = 480;
     const streaming = false;
+    var counter = 0;
 
     let images = [];
 
@@ -77,9 +78,10 @@
         (e) => {
             mouseIsDown(e);
             timeout = setInterval(() => {
-                mouseIsDown(e);
+                mouseIsDown(e);              
             }, 50);
         },
+        
     );
 
     function mouseIsDown(e) {
@@ -185,6 +187,9 @@
         capture = document.createElement("img");
         capture.setAttribute("src", data);
         outputs.appendChild(capture);
+        counter=counter+1
+        captureBtn.innerHTML = "Hold to Capture ("+counter+"/52)";
+        
     }
 
 </script>
